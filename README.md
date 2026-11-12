@@ -84,6 +84,6 @@ One of its biggest advantages: You don't need to manually register every Element
 <img width="2560" height="1440" alt="Captura de tela 2026-11-12 155816" src="https://github.com/user-attachments/assets/01379c0e-7742-4530-accb-317725f22309" />
 <img width="1920" height="1032" alt="Captura de tela 2026-11-12 155745" src="https://github.com/user-attachments/assets/13a54ec6-fe00-4a19-b351-fa4ec594f952" />
 <img width="314" height="187" alt="Captura de tela 2026-11-12 155742" src="https://github.com/user-attachments/assets/48ee5115-36eb-474f-a33d-e6290f173020" />
-<img width="979" height="672" alt="Captura de tela 2026-11-12 160509" src="https://github.com/user-attachments/assets/3f95cd76-6502-4784-915d-741b5ef5f181" />
-<img width="979" height="672" alt="Captura de tela 2026-11-12 160503" src="https://github.com/user-attachments/assets/7e181096-2d9b-4e30-9b54-a9cf223fe550" />
-<img width="979" height="672" alt="Captura de tela 2026-11-12 160456" src="https://github.com/user-attachments/assets/cb335a63-6323-4b67-8074-8a20cb1ea0dd" />
+<img width="802" height="704" alt="Captura de tela 2026-11-12 161147" src="https://github.com/user-attachments/assets/c440e2da-25dd-4d92-86e9-1739dd8de7ab" />
+<img width="802" height="704" alt="Captura de tela 2026-11-12 161151" src="https://github.com/user-attachments/assets/740d05d1-44d7-4f9c-ab55-31542ec54073" />
+<img width="802" height="704" alt="Captura de tela 2026-11-12 161155" src="https://github.com/user-attachments/assets/65d58850-660d-4329-886c-a431a553b232" />
