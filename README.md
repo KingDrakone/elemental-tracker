@@ -79,7 +79,8 @@ It allows players to track their collection in real time while giving livestream
 | Ctrl + Shift + O | Show/Hide Overlay   |
 | Ctrl + Shift + L | Lock/Unlock Overlay |
 
-One of its biggest advantages: You don't need to manually register every Elemental. Whenever the program successfully recognizes a new discovery notification in Fortnite, it automatically updates your collection.<img width="2560" height="1440" alt="Captura de tela 2026-11-12 155816" src="https://github.com/user-attachments/assets/01379c0e-7742-4530-accb-317725f22309" />
-<img width="2560" height="1440" alt="Captura de tela 2026-11-12 155816" src="https://github.com/user-attachments/assets/87181720-a994-49eb-8a02-e40f5bcc0f58" />
+One of its biggest advantages: You don't need to manually register every Elemental. Whenever the program successfully recognizes a new discovery notification in Fortnite, it automatically updates your collection.
+
+<img width="2560" height="1440" alt="Captura de tela 2026-11-12 155816" src="https://github.com/user-attachments/assets/01379c0e-7742-4530-accb-317725f22309" />
 <img width="1920" height="1032" alt="Captura de tela 2026-11-12 155745" src="https://github.com/user-attachments/assets/13a54ec6-fe00-4a19-b351-fa4ec594f952" />
 <img width="314" height="187" alt="Captura de tela 2026-11-12 155742" src="https://github.com/user-attachments/assets/48ee5115-36eb-474f-a33d-e6290f173020" />
