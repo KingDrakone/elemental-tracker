@@ -1,3 +1,6 @@
+<img width="979" height="672" alt="Captura de tela 2026-11-12 160509" src="https://github.com/user-attachments/assets/3f95cd76-6502-4784-915d-741b5ef5f181" />
+<img width="979" height="672" alt="Captura de tela 2026-11-12 160503" src="https://github.com/user-attachments/assets/7e181096-2d9b-4e30-9b54-a9cf223fe550" />
+<img width="979" height="672" alt="Captura de tela 2026-11-12 160456" src="https://github.com/user-attachments/assets/cb335a63-6323-4b67-8074-8a20cb1ea0dd" />
 # Elementais Tracker – Fortnite Elemental Collection Tracker
 
 Elementais Tracker is a tool designed to help Fortnite players track, organize, and complete their Elemental collection automatically and efficiently.
