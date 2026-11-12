@@ -1,0 +1,15 @@
+{
+ "opacidade": 0.9,
+ "tamanho": 70,
+ "idioma": "pt",
+ "overlay_jogo": true,
+ "estilo": "completo",
+ "rastreio": true,
+ "obs": true,
+ "monitor": 1,
+ "x": 12,
+ "y": 745,
+ "abrir_pagina": true,
+ "auto_perfil": false,
+ "bloqueado": true
+}

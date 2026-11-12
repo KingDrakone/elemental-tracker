@@ -1,0 +1,90 @@
+RASTREADOR DE ELEMENTAIS
+========================
+
+COMEÇAR (o mais simples)
+   Faz duplo clique em  iniciar.bat . Na primeira vez instala o que falta. Abre o painel
+   "Elementais do Fortnite" (uma janela preta, com Início / Definições / Ajuda) e liga tudo:
+   rastreador, overlay do jogo, overlay OBS e sincronização com a página.
+   Teclas: ↑ ↓ escolher, Enter confirmar, ← → mudar de separador.
+   Em "Definições" ligas/desligas cada parte em separado (Enter) e mudas tamanho, opacidade,
+   estilo, idioma e monitor. Tudo fica guardado em config.json.
+   Atalhos que funcionam mesmo dentro do jogo:
+       Ctrl+Shift+O  mostra / esconde o overlay
+       Ctrl+Shift+L  desbloqueia (para o arrastares com o rato) / bloqueia
+   Ícone: a janela mostra o ícone do elemental (icone.ico). Para teres também um atalho com
+   esse ícone no ambiente de trabalho, faz duplo clique em "Criar atalho.bat".
+   Nota: no Windows Terminal (em vez da janela clássica do Prompt de Comando) o ícone da
+   janela não pode ser mudado; o atalho do ambiente de trabalho tem sempre o ícone.
+   PÁGINA COMO JANELA: no Início, "Abrir a página dos Elementais (janela)" abre a página numa
+   janela própria (Edge ou Chrome em modo aplicação), sem separadores nem barra de endereço, e
+   já ligada ao rastreador. Funciona sem entrares no claude.ai. Em Definições, "Abrir a página
+   ao iniciar" abre-a sempre que arrancas o painel. (O ficheiro pagina.html é a própria página.)
+   PERFIS (uma coleção por conta): quando mudas de conta no Fortnite/Epic neste PC, o painel
+   troca sozinho para o perfil dessa conta (a coleção, a página e os overlays mudam juntos; as
+   contas novas ganham um perfil novo). A deteção lê o log do Fortnite (melhor esforço): se não
+   acertar no teu PC, usa "Mudar de perfil (outra conta)" no Início, ou "Criar um perfil novo" e
+   "Diagnóstico da conta" em Definições. "Detetar a conta automaticamente" liga/desliga isto.
+   Precisas de Python 3 (python.org, marca "Add python.exe to PATH").
+
+O RESTO DESTE FICHEIRO explica cada parte em separado (para quem prefere usar o
+Prompt de Comando).
+
+1. Instalar (uma vez). Precisas de Python 3 no PC:
+       pip install -r requirements.txt
+
+2. Correr enquanto jogas Fortnite (modo "Janela" ou "Ecrã inteiro em janela"):
+       python tracker.py
+   Joga normalmente. Quando aparecer a mensagem "NOVO - FOI PARA A COLEÇÃO" com a
+   imagem do elemental, o programa reconhece-o, escreve "Novo elemental: n.º XX" e
+   guarda-o em elementais.json. Para parar: Ctrl+C.
+
+3. Na página dos Elementais, carrega em "Importar do rastreador" e escolhe o
+   ficheiro elementais.json. Os encontrados ficam marcados.
+
+SOBREPOSIÇÃO POR CIMA DO JOGO
+   Abre uma segunda janela do Prompt de Comando na mesma pasta e corre:
+       python sobreposicao.py
+   (com o tracker.py a correr na primeira). Aparece o contador X/34 por cima do jogo e,
+   quando apanhas um elemental, um cartão com a imagem e o nome durante 8 segundos.
+   Por baixo fica a grelha da coleção: silhueta preta nos que ainda não tens e a imagem
+   nos que já tens (--sem-grelha esconde-a). Os cliques passam para o jogo: a
+   sobreposição só mostra, não se clica nela.
+   Mudar posição/tamanho:
+       python sobreposicao.py --x 20 --y 140 --tamanho 1.5
+   Transparência: escolhe-a na página (barra "Transparência da sobreposição", aparece quando
+   está sincronizada). Aplica-se às duas sobreposições. Ou à força: --opacidade 0.6 (por defeito; 0.3 = mais transparente, 1 = opaco)
+   O Fortnite tem de estar em "Ecrã inteiro em janela" (em ecrã inteiro exclusivo
+   a sobreposição fica escondida). Usa o tkinter, que já vem com o Python do Windows.
+   Em inglês: python sobreposicao.py --idioma en
+   AVISO: esta janela não foi testada num ecrã real.
+
+SOBREPOSIÇÃO NO OBS
+   Com o tracker.py a correr, no OBS: Fontes > + > "Navegador" (Browser Source) e põe
+       URL:      http://localhost:8765/overlay
+       Largura 600, Altura 500 (ajusta ao gosto). O fundo já é transparente.
+   Mostra o contador X/34 com barra e, sempre que apanhas um elemental, um cartão com a
+   imagem, o nome e a raridade durante 8 segundos. Mete a fonte por cima da captura do jogo.
+   Variantes do endereço:
+       http://localhost:8765/overlay?lang=en       (em inglês)
+       http://localhost:8765/overlay?grelha=1      (mostra também a coleção toda)
+       http://localhost:8765/overlay?escala=1.5    (aumenta tudo 50%)
+       http://localhost:8765/overlay?fundo=0.2     (fundo mais transparente; 0 = sem fundo, 1 = opaco)
+   Podes abrir o mesmo endereço num navegador para ver como fica.
+
+SINCRONIZAR COM A PÁGINA
+   Com o tracker.py a correr, a página liga-se sozinha ao PC (aparece "Sincronizado com o PC"
+   ao lado de "Redefinir tudo"). Os elementais que o rastreador apanha ou que marcas na
+   sobreposição aparecem na página, e o que marcas na página aparece na sobreposição.
+   Se o navegador bloquear a ligação, a página mostra "PC: desligado": usa então o botão
+   "Importar do rastreador".
+
+Opções:
+   python tracker.py --monitor 2            (outro monitor)
+   python tracker.py --imagem captura.png   (testa numa captura de ecrã e sai)
+
+Notas:
+ - Só funciona em PC (Windows, macOS, Linux).
+ - Em ecrã inteiro exclusivo a captura pode vir preta: usa "Ecrã inteiro em janela".
+ - Só conta quando a mensagem de novo elemental aparece (é o que evita falsos positivos).
+ - Foi testado com uma captura real do aviso (2560x1440): reconheceu o Halfpeel'd Normal.
+   Se um elemental não for reconhecido, baixa LIMIAR no topo de tracker.py (ex.: 0.65).
