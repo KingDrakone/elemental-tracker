@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt"><head><meta charset="utf-8"><title>Elementais overlay</title>
 <style>
-/* Fundo transparente para o OBS. Parâmetros: ?grelha=1 mostra a coleção toda; ?escala=1.5 aumenta tudo */
+/* Fundo transparente para o OBS. Parâmetros: ?grelha=0 esconde a coleção toda (por defeito aparece, ver Definições → estilo); ?escala=1.5 aumenta tudo */
 html,body{margin:0;background:transparent;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;color:#fff}
 #root{display:inline-flex;flex-direction:column;gap:10px;padding:12px;transform-origin:top left}
 .painel{background:rgba(10,14,34,var(--fundo,.45));border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 14px;min-width:260px}
@@ -17,13 +17,13 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:'Segoe UI'
 .novo .t em{font-style:normal;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--rc)}
 @keyframes entra{from{transform:translateX(-40px) scale(.8);opacity:0}to{transform:none;opacity:1}}
 .grelha{display:grid;grid-template-columns:repeat(9,44px);gap:5px}
-.grelha div{width:44px;height:44px;border-radius:7px;overflow:hidden;background:#000}
+.grelha div{width:44px;height:44px;border-radius:7px;overflow:hidden;background:#1c243c}
 .grelha img{width:100%;height:100%;object-fit:cover;display:block}
 .grelha .sil{-webkit-mask:var(--m) center/cover;mask:var(--m) center/cover;background:#000;opacity:.9}
 </style></head><body>
 <div id="root">
   <div class="painel novo" id="novo"><img id="nimg" alt=""><div class="t"><small id="ntit">NOVO — FOI PARA A COLEÇÃO</small><strong id="nnome"></strong><em id="nraro"></em></div></div>
-  <div class="painel"><div class="topo"><span id="ttit">Elementais</span><b id="cont">0/34</b></div><div class="barra"><i id="fill"></i></div></div>
+  <div class="painel"><div class="topo"><span id="ttit">Elementais</span><b id="cont">0/44</b></div><div class="barra"><i id="fill"></i></div></div>
   <div class="painel grelha" id="grelha" hidden></div>
 </div>
 <script>
@@ -34,13 +34,13 @@ var FU=parseFloat(new URLSearchParams(location.search).get('fundo'));if(FU>=0&&F
 var LP=new URLSearchParams(location.search).get('lang'),EN=LP?LP==='en':(window.CFG||{}).idioma==='en';
 var VN=EN?['Normal','Fortune','Cursed']:['Normal','Valioso','Amaldiçoado'];
 var RN=EN?{'Raro':'Rare','Épico':'Epic','Lendário':'Legendary','Mítico':'Mythic'}:{'Raro':'Raro','Épico':'Épico','Lendário':'Lendário','Mítico':'Mítico'};
-var NUM={32: 1, 30: 2, 31: 3, 26: 5, 24: 6, 25: 7, 23: 9, 21: 10, 22: 11, 20: 13, 18: 14, 19: 15, 15: 17, 13: 18, 14: 19, 2: 21, 0: 22, 5: 25, 3: 26, 4: 27, 12: 29, 10: 30, 11: 31, 34: 37, 16: 38, 17: 39, 9: 41, 7: 42, 8: 43, 29: 49, 27: 50, 28: 51, 33: 57, 6: 58};
-var PT={"Halfpeel'd": "Descascadinho", "Re-Pete": "Repetácio", "Barry O'Fish": "Barrilson", "Wayfinder": "Localizador", "Chester": "Baunardo", "Exmarks": "Xisconde", "Kelper": "Apatilda", "Lil' Squibbly": "Polvitozinho", "Lil' Flacko": "Flacko Jr.", "Lil' Uzi Vert Jr.": "Lil' Uzi Vert Jr.", "Transponder Snail": "Caracol Telepático", "Doces Sonhos": "Bons Sonhos", "Plundarrgh": "Moedonho"};
+var NUM={32: 1, 30: 2, 31: 3, 26: 5, 24: 6, 25: 7, 23: 9, 21: 10, 22: 11, 20: 13, 18: 14, 19: 15, 15: 17, 13: 18, 14: 19, 2: 21, 0: 22, 1: 23, 5: 25, 3: 26, 4: 27, 12: 29, 10: 30, 11: 31, 34: 37, 16: 38, 17: 39, 9: 41, 7: 42, 8: 43, 29: 49, 27: 50, 28: 51, 33: 57, 6: 58, 35: 53, 36: 54, 37: 55, 38: 33, 39: 34, 40: 35, 41: 45, 42: 46, 43: 47};
+var PT={"Halfpeel'd": "Descascadinho", "Re-Pete": "Repetácio", "Barry O'Fish": "Barrilson", "Wayfinder": "Localizador", "Chester": "Baunardo", "Exmarks": "Xisconde", "Kelper": "Apatilda", "Lil' Squibbly": "Polvitozinho", "Lil' Flacko": "Flacko Jr.", "Lil' Uzi Vert Jr.": "Lil' Uzi Vert Jr.", "Transponder Snail": "Caracol Telepático", "Doces Sonhos": "Bons Sonhos", "Plundarrgh": "Moedonho", "Mini Miku": "Mini Miku", "Mô Lusco": "Mô Lusco", "Oscar II": "Oscar II"};
 function nomeL(n){return n==='Doces Sonhos'?(EN?'Sweet Dreams':'Bons Sonhos'):(EN?n:(PT[n]||n))}
 var RARS=[['Raro',[["Halfpeel'd",[32,30,31]],['Re-Pete',[26,24,25]],["Barry O'Fish",[23,21,22]],['Wayfinder',[20,18,19]]]],
- ['Épico',[['Chester',[15,13,14]],['Exmarks',[5,3,4]],['Kelper',[2,0]],["Lil' Squibbly",[12,10,11]]]],
- ['Lendário',[["Lil' Flacko",[34,16,17]],["Lil' Uzi Vert Jr.",[9,7,8]],['Transponder Snail',[33]]]],
- ['Mítico',[['Doces Sonhos',[6]],['Plundarrgh',[29,27,28]]]]];
+ ['Épico',[['Chester',[15,13,14]],['Exmarks',[5,3,4]],['Kelper',[2,0,1]],["Lil' Squibbly",[12,10,11]]]],
+ ['Lendário',[["Lil' Flacko",[34,16,17]],["Lil' Uzi Vert Jr.",[9,7,8]],['Transponder Snail',[33]],['Mô Lusco',[38,39,40]],['Oscar II',[41,42,43]]]],
+ ['Mítico',[['Doces Sonhos',[6]],['Plundarrgh',[29,27,28]],['Mini Miku',[35,36,37]]]]];
 var INFO={},ORDEM=[];
 RARS.forEach(function(r){r[1].forEach(function(g){g[1].forEach(function(i,k){INFO[i]={n:g[0],k:k,r:r[0]};ORDEM.push(i);});});});
 if(EN){document.getElementById('ntit').textContent='NEW — ADDED TO COLLECTION';document.getElementById('ttit').textContent='Sprites';}
@@ -51,7 +51,7 @@ function desenhaGrelha(found){
   var g=document.getElementById('grelha');g.hidden=false;
   g.innerHTML=ORDEM.map(function(i){
     return found.indexOf(i)>-1?'<div><img src="/refs/'+pad(i)+'.png" alt=""></div>'
-      :'<div><div class="sil" style="--m:url(/refs/mask_'+pad(i)+'.png);width:100%;height:100%"></div></div>';}).join('');
+      :'<div><img src="/refs/mini/sil_'+pad(i)+'.png" alt=""></div>';}).join('');
 }
 function mostra(i){
   var f=INFO[i],el=document.getElementById('novo');if(!f)return;
@@ -75,7 +75,7 @@ function ciclo(){
     var found=(d.found||[]).map(function(n){return n-1}).filter(function(i){return INFO[i]});
     document.getElementById('cont').textContent=found.length+'/'+TOTAL;
     document.getElementById('fill').style.width=(found.length/TOTAL*100)+'%';
-    if(P.get('grelha'))desenhaGrelha(found);
+    var gq=P.get('grelha');if(gq==='1'||(gq!=='0'&&(window.CFG||{}).estilo!=='simples'))desenhaGrelha(found);
     if(vistos!==null&&found.length>vistos)mostra(found[found.length-1]);
     vistos=found.length;
   }).catch(function(){});

@@ -410,6 +410,7 @@ class Painel:
         if n == len(idx):
             tags += ["completo", "complete"]
         tags = [self.norm(x) for x in tags]
+        termos = [w[1:] if w.startswith("#") and not w[1:].isdigit() else w for w in termos]
         return all((w in tags) if w.startswith("#") else any(not x.startswith("#") and w in x for x in tags) for w in termos)
 
     def marcar(self, idx_list):
@@ -519,7 +520,7 @@ class Painel:
     # -- desenho
     def linhas(self):
         ctl = self.ctl
-        L = [NEG + "Elementais do Fortnite" + R + DIM + "  v" + VERSAO + R,
+        L = [NEG + "Elementais do Fortnite" + R + DIM + "  v" + VERSAO + "      " + ("CODE IN THE SHOP: " if config.ler()["idioma"] == "en" else "CÓDIGO NA LOJA: ") + R + NEG + "DRAKONE" + R,
              GOLD + "─" * LARGURA + R]
         L.append(" ".join((SEL + " %s " % n + R) if i == self.tab else (GOLD + "▏" + INK + "%s" % n + GOLD + "▕" + R) for i, n in enumerate(TABS)))
         L.append("")
@@ -660,6 +661,11 @@ class Painel:
             marca = (rgb(122, 74, 30) + "\x1b[1m› " if gi == self.sel[1] else "  ")
             nm = ("\x1b[1m" if gi == self.sel[1] else "") + "%-22s" % dados.nome_l(nome, en)[:21]
             L.append(preenche(CARD + marca + nm + "\x1b[22m " + "".join(cel) + CMUT + "%d/%d" % (n, len(idx)), CARD))
+            if gi == self.sel[1]:
+                st = ("complete" if en else "completo") if n == len(idx) else (("found" if en else "encontrado") if n else ("missing" if en else "falta"))
+                slug = re.sub(r"[^a-z0-9]", "", self.norm(dados.nome_l(nome, en)))
+                tags = ["#" + slug, "#" + self.norm(rn(rar_)), "#" + st] + ["#%d" % dados.NUM[i] for i in idx if i in dados.NUM]
+                L.append(preenche(CARD + "  " + CMUT + "Tags  " + rgb(122, 74, 30) + "  ".join(tags), CARD))
         return L
 
     def def_linhas(self):
@@ -692,7 +698,7 @@ class Painel:
             "",
             NEG + "OBS" + R,
             "   Fonte 'Navegador' com o endereço: " + ENDERECO,
-            "   (opções: ?grelha=1  ?escala=1.5  ?fundo=0.2  ?lang=en)",
+            "   (opções: ?grelha=0  ?escala=1.5  ?fundo=0.2  ?lang=en)",
             "",
             NEG + "Ficheiros" + R,
             "   elementais.json (coleção)   config.json (definições)",

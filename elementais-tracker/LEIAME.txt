@@ -44,7 +44,7 @@ Prompt de Comando).
 SOBREPOSIÇÃO POR CIMA DO JOGO
    Abre uma segunda janela do Prompt de Comando na mesma pasta e corre:
        python sobreposicao.py
-   (com o tracker.py a correr na primeira). Aparece o contador X/34 por cima do jogo e,
+   (com o tracker.py a correr na primeira). Aparece o contador X/44 por cima do jogo e,
    quando apanhas um elemental, um cartão com a imagem e o nome durante 8 segundos.
    Por baixo fica a grelha da coleção: silhueta preta nos que ainda não tens e a imagem
    nos que já tens (--sem-grelha esconde-a). Os cliques passam para o jogo: a
@@ -62,11 +62,11 @@ SOBREPOSIÇÃO NO OBS
    Com o tracker.py a correr, no OBS: Fontes > + > "Navegador" (Browser Source) e põe
        URL:      http://localhost:8765/overlay
        Largura 600, Altura 500 (ajusta ao gosto). O fundo já é transparente.
-   Mostra o contador X/34 com barra e, sempre que apanhas um elemental, um cartão com a
+   Mostra o contador X/44 com barra e, sempre que apanhas um elemental, um cartão com a
    imagem, o nome e a raridade durante 8 segundos. Mete a fonte por cima da captura do jogo.
    Variantes do endereço:
        http://localhost:8765/overlay?lang=en       (em inglês)
-       http://localhost:8765/overlay?grelha=1      (mostra também a coleção toda)
+       http://localhost:8765/overlay?grelha=0      (esconde a coleção toda)
        http://localhost:8765/overlay?escala=1.5    (aumenta tudo 50%)
        http://localhost:8765/overlay?fundo=0.2     (fundo mais transparente; 0 = sem fundo, 1 = opaco)
    Podes abrir o mesmo endereço num navegador para ver como fica.
@@ -88,3 +88,8 @@ Notas:
  - Só conta quando a mensagem de novo elemental aparece (é o que evita falsos positivos).
  - Foi testado com uma captura real do aviso (2560x1440): reconheceu o Halfpeel'd Normal.
    Se um elemental não for reconhecido, baixa LIMIAR no topo de tracker.py (ex.: 0.65).
+
+Se um elemental novo não for contado
+   O painel escreve na Atividade "Vi o aviso de novo elemental mas não o reconheci" e guarda a
+   captura na pasta falhas/ (as últimas 8). Marca esse elemental à mão no separador Coleção
+   e manda as capturas de falhas/ para se afinar o reconhecimento.

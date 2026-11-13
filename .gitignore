@@ -1,0 +1,8 @@
+# dados pessoais e ficheiros gerados ao usar o rastreador
+__pycache__/
+*.pyc
+elementais-tracker/config.json
+elementais-tracker/elementais.json
+elementais-tracker/perfis.json
+elementais-tracker/perfis/
+elementais-tracker/falhas/
