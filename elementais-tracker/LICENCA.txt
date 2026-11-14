@@ -1,0 +1,21 @@
+Elementais Tracker
+Copyright (c) 2026 King Drakone. Todos os direitos reservados. / All rights reserved.
+
+Este software e o seu código pertencem a King Drakone.
+É permitido usar o programa para uso pessoal, tal como foi distribuído.
+NÃO é permitido, sem autorização escrita do autor: modificar, copiar, redistribuir,
+publicar de novo (total ou em parte), vender ou criar obras derivadas.
+
+This software and its source code belong to King Drakone.
+Personal use of the program, as distributed, is permitted.
+Without the author's written permission you may NOT modify, copy, redistribute,
+republish (in whole or in part), sell or create derivative works.
+
+O software é fornecido "como está", sem garantias.
+
+Aviso: projeto de fã, não oficial. Não é afiliado, patrocinado nem aprovado pela Epic Games.
+Fortnite e as imagens e nomes do jogo pertencem à Epic Games, Inc.
+Unofficial fan project, not affiliated with or endorsed by Epic Games. Fortnite and
+related names and images are property of Epic Games, Inc.
+
+Contacto / Contact: https://www.instagram.com/kingdrakone_reserva/

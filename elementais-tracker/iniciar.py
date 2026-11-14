@@ -312,12 +312,25 @@ class Controlo:
 
 # ---------------------------------------------------------------- painel (texto)
 TABS = ["Início", "Coleção", "Definições", "Ajuda"]
+INSTAGRAM = "https://www.instagram.com/kingdrakone_reserva/"
+YOUTUBE = "https://www.youtube.com/@KingDrakone"
+YOUTUBE2 = "https://www.youtube.com/@kingDrakone-o6g"
+XURL = "https://x.com/kingdrakone"
+TWITCH = "https://www.twitch.tv/kingdrakone"
+KICK = "https://kick.com/kingdrakone"
+
 ACOES = [
     ("Abrir a página dos Elementais (janela)", "pagina"),
     ("Mostrar / esconder o overlay", "visivel"),
     ("Desbloquear / bloquear o overlay (para o mover)", "bloqueio"),
     ("Copiar o endereço do OBS", "obs"),
     ("Mudar de perfil (outra conta)", "perfil"),
+    ("Abrir o Instagram (@kingdrakone_reserva)", "instagram"),
+    ("Abrir o YouTube (@KingDrakone)", "youtube"),
+    ("Abrir o YouTube 2 (@kingDrakone-o6g)", "youtube2"),
+    ("Abrir o X (@kingdrakone)", "x"),
+    ("Abrir a Twitch (kingdrakone)", "twitch"),
+    ("Abrir a Kick (kingdrakone)", "kick"),
     ("Redefinir elementais (apaga a coleção deste perfil)", "reset"),
     ("Sair", "sair"),
 ]
@@ -447,7 +460,27 @@ class Painel:
             self.a_escrever = True
             return True
         k = t.lower() if isinstance(t, str) and len(t) == 1 else t
-        if k == "r":
+        if k != "a":
+            self.armado_a = False
+        if k == "a":
+            if not gs:
+                return True
+            if not getattr(self, "armado_a", False):
+                self.armado_a = True
+                self.ctl.log("Carrega em A outra vez para marcar todos os elementais desta lista.")
+                return True
+            self.armado_a = False
+            a = self.achados()
+            ordem = [n for n in tracker.ler_estado() if (n - 1) in dados.INFO]
+            n = 0
+            for _, _, idx in gs:
+                for i in idx:
+                    if i not in a and (i + 1) not in ordem:
+                        ordem.append(i + 1)
+                        n += 1
+            tracker.guardar(ordem)
+            self.ctl.log("Marcados %d elementais." % n, "ok")
+        elif k == "r":
             self.rar = (self.rar + 1) % (len(dados.RARS) + 1)
         elif k == "f":
             self.stat = (self.stat + 1) % 3
@@ -505,6 +538,24 @@ class Painel:
             ctl.alternar_bloqueio()
         elif a == "obs":
             ctl.copiar_obs()
+        elif a == "instagram":
+            webbrowser.open(INSTAGRAM)
+            ctl.log("Instagram aberto no navegador.")
+        elif a == "youtube":
+            webbrowser.open(YOUTUBE)
+            ctl.log("YouTube aberto no navegador.")
+        elif a == "youtube2":
+            webbrowser.open(YOUTUBE2)
+            ctl.log("YouTube 2 aberto no navegador.")
+        elif a == "kick":
+            webbrowser.open(KICK)
+            ctl.log("Kick aberta no navegador.")
+        elif a == "twitch":
+            webbrowser.open(TWITCH)
+            ctl.log("Twitch aberta no navegador.")
+        elif a == "x":
+            webbrowser.open(XURL)
+            ctl.log("X aberto no navegador.")
         elif a == "perfil":
             ctl.mudar_perfil()
         elif a == "reset":
@@ -521,6 +572,8 @@ class Painel:
     def linhas(self):
         ctl = self.ctl
         L = [NEG + "Elementais do Fortnite" + R + DIM + "  v" + VERSAO + "      " + ("CODE IN THE SHOP: " if config.ler()["idioma"] == "en" else "CÓDIGO NA LOJA: ") + R + NEG + "DRAKONE" + R,
+             DIM + "Instagram: " + R + NEG + "@kingdrakone_reserva" + R + DIM + "   X: " + R + NEG + "@kingdrakone" + R + DIM + "   Twitch: " + R + NEG + "kingdrakone" + R + DIM + "   Kick: " + R + NEG + "kingdrakone" + R,
+             DIM + "YouTube: " + R + NEG + "@KingDrakone" + R + DIM + " · " + R + NEG + "@kingDrakone-o6g" + R,
              GOLD + "─" * LARGURA + R]
         L.append(" ".join((SEL + " %s " % n + R) if i == self.tab else (GOLD + "▏" + INK + "%s" % n + GOLD + "▕" + R) for i, n in enumerate(TABS)))
         L.append("")
@@ -535,8 +588,8 @@ class Painel:
         L.append("")
         L.append(GOLD + "╌" * LARGURA + R)
         if self.tab == 1:
-            L.append(DIM + "↑ ↓ elemental   1 2 3 marca Normal/Valioso/Amaldiçoado   Enter marca todos   R raridade" + R)
-            L.append(DIM + "F filtro   / buscar   L idioma   C limpar   ← → separadores" + R)
+            L.append(DIM + "↑ ↓ elemental   1 2 3 marca Normal/Valioso/Amaldiçoado   Enter marca o elemental   A marca todos" + R)
+            L.append(DIM + "R raridade   F filtro   / buscar   L idioma   C limpar   ← → separadores" + R)
         else:
             L.append(DIM + "↑ ↓ escolher   Enter confirmar   ← → separadores" + R)
         L.append(DIM + "Overlay, mesmo no jogo: Ctrl+Shift+O mostrar / esconder   Ctrl+Shift+L bloquear" + R)
@@ -661,11 +714,6 @@ class Painel:
             marca = (rgb(122, 74, 30) + "\x1b[1m› " if gi == self.sel[1] else "  ")
             nm = ("\x1b[1m" if gi == self.sel[1] else "") + "%-22s" % dados.nome_l(nome, en)[:21]
             L.append(preenche(CARD + marca + nm + "\x1b[22m " + "".join(cel) + CMUT + "%d/%d" % (n, len(idx)), CARD))
-            if gi == self.sel[1]:
-                st = ("complete" if en else "completo") if n == len(idx) else (("found" if en else "encontrado") if n else ("missing" if en else "falta"))
-                slug = re.sub(r"[^a-z0-9]", "", self.norm(dados.nome_l(nome, en)))
-                tags = ["#" + slug, "#" + self.norm(rn(rar_)), "#" + st] + ["#%d" % dados.NUM[i] for i in idx if i in dados.NUM]
-                L.append(preenche(CARD + "  " + CMUT + "Tags  " + rgb(122, 74, 30) + "  ".join(tags), CARD))
         return L
 
     def def_linhas(self):
@@ -685,7 +733,7 @@ class Painel:
             "   guarda-o e mostra-o no overlay e na página (que sincroniza sozinha).",
             "3. Cada parte liga/desliga em Definições, sem fechar as outras.",
             "4. Em Coleção vês e marcas à mão os elementais (como na página): 1 2 3 variante,",
-            "   Enter todos, R raridade, F filtro, / buscar, L idioma, C limpar.",
+            "   Enter o elemental, A todos (2x), R raridade, F filtro, / buscar, L idioma, C limpar.",
             "",
             NEG + "Contas" + R,
             "   Cada conta tem a sua coleção (perfil). Com a deteção automática ligada, o painel troca",

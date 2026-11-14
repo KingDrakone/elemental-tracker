@@ -93,3 +93,5 @@ Se um elemental novo não for contado
    O painel escreve na Atividade "Vi o aviso de novo elemental mas não o reconheci" e guarda a
    captura na pasta falhas/ (as últimas 8). Marca esse elemental à mão no separador Coleção
    e manda as capturas de falhas/ para se afinar o reconhecimento.
+
+Licença: ver LICENCA.txt (todos os direitos reservados, King Drakone).
