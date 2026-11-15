@@ -318,6 +318,7 @@ YOUTUBE2 = "https://www.youtube.com/@kingDrakone-o6g"
 XURL = "https://x.com/kingdrakone"
 TWITCH = "https://www.twitch.tv/kingdrakone"
 KICK = "https://kick.com/kingdrakone"
+TIKTOK = "https://www.tiktok.com/@kinkdrakone"
 
 ACOES = [
     ("Abrir a página dos Elementais (janela)", "pagina"),
@@ -331,6 +332,7 @@ ACOES = [
     ("Abrir o X (@kingdrakone)", "x"),
     ("Abrir a Twitch (kingdrakone)", "twitch"),
     ("Abrir a Kick (kingdrakone)", "kick"),
+    ("Abrir o TikTok (@kinkdrakone)", "tiktok"),
     ("Redefinir elementais (apaga a coleção deste perfil)", "reset"),
     ("Sair", "sair"),
 ]
@@ -547,6 +549,9 @@ class Painel:
         elif a == "youtube2":
             webbrowser.open(YOUTUBE2)
             ctl.log("YouTube 2 aberto no navegador.")
+        elif a == "tiktok":
+            webbrowser.open(TIKTOK)
+            ctl.log("TikTok aberto no navegador.")
         elif a == "kick":
             webbrowser.open(KICK)
             ctl.log("Kick aberta no navegador.")
@@ -572,7 +577,7 @@ class Painel:
     def linhas(self):
         ctl = self.ctl
         L = [NEG + "Elementais do Fortnite" + R + DIM + "  v" + VERSAO + "      " + ("CODE IN THE SHOP: " if config.ler()["idioma"] == "en" else "CÓDIGO NA LOJA: ") + R + NEG + "DRAKONE" + R,
-             DIM + "Instagram: " + R + NEG + "@kingdrakone_reserva" + R + DIM + "   X: " + R + NEG + "@kingdrakone" + R + DIM + "   Twitch: " + R + NEG + "kingdrakone" + R + DIM + "   Kick: " + R + NEG + "kingdrakone" + R,
+             DIM + "Instagram: " + R + NEG + "@kingdrakone_reserva" + R + DIM + "   X: " + R + NEG + "@kingdrakone" + R + DIM + "   Twitch: " + R + NEG + "kingdrakone" + R + DIM + "   Kick: " + R + NEG + "kingdrakone" + R + DIM + "   TikTok: " + R + NEG + "@kinkdrakone" + R,
              DIM + "YouTube: " + R + NEG + "@KingDrakone" + R + DIM + " · " + R + NEG + "@kingDrakone-o6g" + R,
              GOLD + "─" * LARGURA + R]
         L.append(" ".join((SEL + " %s " % n + R) if i == self.tab else (GOLD + "▏" + INK + "%s" % n + GOLD + "▕" + R) for i, n in enumerate(TABS)))

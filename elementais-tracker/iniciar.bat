@@ -1,7 +1,5 @@
 @echo off
 cd /d "%~dp0"
-rem Abre numa janela de consola classica (conhost): e la que o icone do elemental aparece na barra de tarefas.
-if not defined ELEM_HOST (set "ELEM_HOST=1" & start "Elementais do Fortnite" conhost.exe cmd /c ""%~f0" %*" & exit /b)
 where python >nul 2>&1
 if errorlevel 1 (
   echo Python nao encontrado. Instala o Python 3 em python.org e marca "Add python.exe to PATH".

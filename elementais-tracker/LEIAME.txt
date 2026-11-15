@@ -95,3 +95,4 @@ Se um elemental novo não for contado
    e manda as capturas de falhas/ para se afinar o reconhecimento.
 
 Licença: ver LICENCA.txt (todos os direitos reservados, King Drakone).
+
