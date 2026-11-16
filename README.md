@@ -81,9 +81,12 @@ It allows players to track their collection in real time while giving livestream
 
 One of its biggest advantages: You don't need to manually register every Elemental. Whenever the program successfully recognizes a new discovery notification in Fortnite, it automatically updates your collection.
 
-<img width="2560" height="1440" alt="Captura de tela 2026-11-12 155816" src="https://github.com/user-attachments/assets/01379c0e-7742-4530-accb-317725f22309" />
-<img width="1920" height="1032" alt="Captura de tela 2026-11-12 155745" src="https://github.com/user-attachments/assets/13a54ec6-fe00-4a19-b351-fa4ec594f952" />
-<img width="314" height="187" alt="Captura de tela 2026-11-12 155742" src="https://github.com/user-attachments/assets/48ee5115-36eb-474f-a33d-e6290f173020" />
-<img width="802" height="704" alt="Captura de tela 2026-11-12 161147" src="https://github.com/user-attachments/assets/c440e2da-25dd-4d92-86e9-1739dd8de7ab" />
-<img width="802" height="704" alt="Captura de tela 2026-11-12 161151" src="https://github.com/user-attachments/assets/740d05d1-44d7-4f9c-ab55-31542ec54073" />
-<img width="802" height="704" alt="Captura de tela 2026-11-12 161155" src="https://github.com/user-attachments/assets/65d58850-660d-4329-886c-a431a553b232" />
+<img width="802" height="704" alt="Captura de tela 2026-11-16 232326" src="https://github.com/user-attachments/assets/2fba7c39-5be3-4608-9015-c32049207c37" />
+<img width="802" height="704" alt="Captura de tela 2026-11-16 232321" src="https://github.com/user-attachments/assets/d812f5ba-96ae-4f7d-b809-1f7e76267a1c" />
+<img width="802" height="704" alt="Captura de tela 2026-11-16 232314" src="https://github.com/user-attachments/assets/fe1af148-70f8-4a89-84e5-1acc1c359d18" />
+<img width="802" height="704" alt="Captura de tela 2026-11-16 232307" src="https://github.com/user-attachments/assets/bf3d9faa-5156-477c-982e-6090623beffe" />
+<img width="312" height="213" alt="Captura de tela 2026-11-16 232259" src="https://github.com/user-attachments/assets/94e98d66-bc2c-4223-aa8b-7558c76574d0" />
+<img width="1920" height="1032" alt="Captura de tela 2026-11-16 232254" src="https://github.com/user-attachments/assets/e7541d36-9c43-41d4-b54e-713ff1dbce09" />
+<img width="2560" height="1440" alt="Captura de tela 2026-11-16 232220" src="https://github.com/user-attachments/assets/5092a0db-8833-4915-b72d-aa59a121f03c" />
+
+
