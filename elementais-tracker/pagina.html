@@ -110,6 +110,8 @@ section.rar>h2 small{font-family:var(--body);font-weight:600;font-size:.8rem;col
   transition:transform .15s ease;min-width:0
 }
 .var:hover{transform:translateY(-2px)}
+.crown{position:absolute;top:-9px;right:-5px;width:24px;height:20px;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55));transform:rotate(14deg)}
+.var.dom{box-shadow:0 0 0 2px #f2b73a,0 0 12px rgba(242,183,58,.55)}
 .num{position:absolute;top:24px;left:7px;z-index:1;font-family:var(--pirate);font-size:.8rem;line-height:1;padding:2px 5px;border-radius:5px;background:var(--rc);color:#fff}
 .var[data-v="0"].on{background:var(--vn)}
 .var[data-v="1"].on{background:var(--vf)}
@@ -254,6 +256,11 @@ function pfLoad(){try{var d=JSON.parse(localStorage.getItem(PKEY));if(d&&d.lista
 var LP=pfLoad();
 var KEY=keyFor(LP.ativo);
 var owned=load();
+var dom=loadDom();
+function loadDom(){try{var r=JSON.parse(localStorage.getItem(KEY+'-dom'));if(Array.isArray(r))return r.filter(function(i){return INFO[i]})}catch(e){}return [];}
+function saveDom(){try{localStorage.setItem(KEY+'-dom',JSON.stringify(dom))}catch(e){}}
+function isDom(i){return dom.indexOf(i)>-1&&has(i)}
+var CROWN='<svg class="crown" viewBox="0 0 24 20" aria-hidden="true"><path d="M2 17 1 5l6 5 5-8 5 8 6-5-1 12z" fill="#f6c343" stroke="#8a5a0a" stroke-width="1.4" stroke-linejoin="round"/><rect x="2" y="16.5" width="20" height="2.6" rx="1" fill="#e0a21f" stroke="#8a5a0a" stroke-width="1"/></svg>';
 var ST={q:'',tab:'todos',status:0,view:'grid'};
 function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function renderTabs(){
@@ -279,7 +286,7 @@ function setSync(on){
 }
 function push(){
   if(!SYNC.on)return;SYNC.hold=Date.now()+3500;
-  try{fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({found:owned.map(function(i){return i+1})})}).catch(function(){setSync(false)});}catch(e){}
+  try{fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({found:owned.map(function(i){return i+1}),dominated:dom.map(function(i){return i+1})})}).catch(function(){setSync(false)});}catch(e){}
 }
 function poll(){
   if(Date.now()<SYNC.hold){setTimeout(poll,1000);return;}
@@ -288,6 +295,10 @@ function poll(){
     fetch(API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
       var remote=(d.found||[]).map(function(n){return n-1}).filter(function(i){return INFO[i]});
       var trocou=SYNC.perfil!==null&&d.perfil!==SYNC.perfil;SYNC.perfil=d.perfil||null;SYNC.nome=d.perfil_nome||'';setSync(true);pfFetch();
+      var rd=(d.dominated||[]).map(function(n){return n-1}).filter(function(i){return INFO[i]}),domNovos=[],domRender=false,domPush=false;
+      if(trocou){dom=rd;saveDom();}
+      else if(SYNC.first){rd.forEach(function(i){if(dom.indexOf(i)<0)dom.push(i)});domPush=dom.length>rd.length;saveDom();}
+      else{domNovos=rd.filter(function(i){return dom.indexOf(i)<0});if(domNovos.length||rd.length!==dom.length){dom=rd;saveDom();domRender=true;}}
       if(trocou){owned=remote;saveLocal();render();toast(tr('profile')+SYNC.nome);}
       else if(SYNC.first){
         SYNC.first=false;var u=remote.slice(),mudou=false;
@@ -301,6 +312,8 @@ function poll(){
           if(novos.length)toast(tr('fromPc')+nome(novos[novos.length-1])+'!');
         }
       }
+      if(domRender){render();if(domNovos.length)toast('\uD83D\uDC51 X1 '+(L==='en'?'dominated: ':'dominado: ')+nome(domNovos[domNovos.length-1])+'!');}
+      if(domPush)push();
       done();
     }).catch(function(){setSync(false);SYNC.first=true;done();});
   }catch(e){setSync(false);done();}
@@ -328,7 +341,7 @@ function pfPost(o,then){
 function pfSwitch(id){
   if(SYNC.on){pfPost({acao:'trocar',id:id},function(){SYNC.hold=0;});return;}
   if(id===LP.ativo)return;
-  saveLocal();LP.ativo=id;pfSave();KEY=keyFor(id);owned=load();render();pfRender();
+  saveLocal();LP.ativo=id;pfSave();KEY=keyFor(id);owned=load();dom=loadDom();render();pfRender();
   var p=LP.lista.filter(function(x){return x.id===id})[0];toast(tr('pfNone')+pfName(p));
 }
 function pfForm(mode){
@@ -347,7 +360,7 @@ function pfSubmit(){
   }
   if(PF.mode==='new'){
     saveLocal();var k=1;while(LP.lista.some(function(p){return p.id==='p'+k}))k++;
-    var id='p'+k;LP.lista.push({id:id,nome:n||(tr('pfAcc')+' '+(LP.lista.length+1))});LP.ativo=id;pfSave();KEY=keyFor(id);owned=[];saveLocal();render();pfRender();toast(tr('pfNone')+LP.lista[LP.lista.length-1].nome);
+    var id='p'+k;LP.lista.push({id:id,nome:n||(tr('pfAcc')+' '+(LP.lista.length+1))});LP.ativo=id;pfSave();KEY=keyFor(id);owned=[];dom=[];saveLocal();saveDom();render();pfRender();toast(tr('pfNone')+LP.lista[LP.lista.length-1].nome);
   }else{
     LP.lista.forEach(function(p){if(p.id===LP.ativo)p.nome=n});pfSave();pfRender();
   }
@@ -362,6 +375,7 @@ function matchQ(g,r){
   var tags=[g.n,g.e||'',r.n,TX.en.rn[r.k],r.k];
   g.v.forEach(function(i,k){tags.push(TX.pt.vn[k],TX.en.vn[k]);if(NUM[i])tags.push('#'+NUM[i]);});
   if(got>0)tags.push('encontrado','found');
+  if(g.v.some(isDom))tags.push('x1','dominado','dominated','coroa','crown');
   if(got<g.v.length)tags.push('falta','missing','pendente');
   if(got===g.v.length)tags.push('completo','complete');
   [g.n,g.e||''].forEach(function(x){tags.push(x.replace(/[^A-Za-z0-9]+/g,''))});
@@ -401,17 +415,22 @@ function render(fresh){
       var h='<div class="card-h"><span class="dot"></span><h3>'+esc(gname(g))+'</h3><span class="pill">'+rn(r)+'</span></div>'+'<div class="vars">';
       g.v.forEach(function(i,k){
         var on=has(i);
-        h+='<button type="button" class="var'+(on?' on':'')+(i===fresh?' fresh':'')+'" id="slot'+i+'" data-i="'+i+'" data-v="'+k+'" aria-pressed="'+on+'" aria-label="'+esc(gname(g)+', '+VN[k]+(on?tr('fndL'):tr('nfndL')))+'">'+
-          (NUM[i]?'<span class="num">#'+NUM[i]+'</span>':'')+'<span class="lab">'+VN[k]+'</span><img alt="" src="'+(on?IMGS[i]:SILS[i])+'"><span class="st">'+(on?tr('fnd'):tr('nfnd'))+'</span></button>';
+        h+='<button type="button" class="var'+(on?' on':'')+(isDom(i)?' dom':'')+(i===fresh?' fresh':'')+'" id="slot'+i+'" data-i="'+i+'" data-v="'+k+'" aria-pressed="'+on+'" aria-label="'+esc(gname(g)+', '+VN[k]+(on?tr('fndL'):tr('nfndL')))+'">'+
+          (NUM[i]?'<span class="num">#'+NUM[i]+'</span>':'')+'<span class="lab">'+VN[k]+'</span><img alt="" src="'+(on?IMGS[i]:SILS[i])+'"><span class="st">'+(on?tr('fnd'):tr('nfnd'))+'</span>'+(isDom(i)?CROWN:'')+'</button>';
       });
       h+='</div><div class="card-f"><span class="'+(n===g.v.length?'ok':'')+'">'+(n===g.v.length?tr('done'):tr('todo'))+'<span class="n">'+n+'/'+g.v.length+'</span></span>'+
         '<button type="button" class="btn ghost small" data-all="1"'+(n===g.v.length?' disabled':'')+'>'+tr('markAll')+'</button></div>';
       c.innerHTML=h;
       c.querySelectorAll('.tg').forEach(function(b){b.onclick=function(){var q=b.getAttribute('data-q');ST.q=ST.q===q?'':q;document.getElementById('q').value=ST.q;render();};});
       c.querySelectorAll('.var').forEach(function(b){
+        b.oncontextmenu=function(e){          /* botão direito: põe / tira a coroa (X1 dominado) à mão */
+          e.preventDefault();var i=parseInt(b.getAttribute('data-i'),10),k=dom.indexOf(i);
+          if(k>-1)dom.splice(k,1);else{dom.push(i);if(!has(i))owned.push(i);}
+          saveDom();save();render();toast((k>-1?'':'\uD83D\uDC51 ')+nome(i)+(k>-1?(L==='en'?': crown removed':': coroa removida'):' X1 '+(L==='en'?'dominated':'dominado')));
+        };
         b.onclick=function(){
           var i=parseInt(b.getAttribute('data-i'),10),k=owned.indexOf(i);
-          if(k>-1){owned.splice(k,1);save();render();toast(nome(i)+tr('unmarked'));}
+          if(k>-1){owned.splice(k,1);var dk=dom.indexOf(i);if(dk>-1){dom.splice(dk,1);saveDom();}save();render();toast(nome(i)+tr('unmarked'));}
           else{owned.push(i);save();render(i);toast(tr('found')+nome(i)+'!');}
         };
       });
@@ -476,7 +495,7 @@ document.getElementById('reset').onclick=function(){
     return;
   }
   clearTimeout(b._t);b.removeAttribute('data-sure');b.textContent=tr('reset');b.style.color='';b.style.borderColor='';
-  owned=[];save();render();toast(tr('resetDone')+TOTAL);
+  owned=[];dom=[];saveDom();save();render();toast(tr('resetDone')+TOTAL);
 };
 document.getElementById('code').onclick=function(){
   try{navigator.clipboard.writeText('DRAKONE').then(function(){toast(L==='en'?'Code DRAKONE copied!':'Código DRAKONE copiado!')},function(){})}catch(e){}
@@ -512,7 +531,7 @@ function applyLang(){
   document.getElementById('copy').textContent=L==='en'?'© 2026 King Drakone. All rights reserved.':'© 2026 King Drakone. Todos os direitos reservados.';
   document.getElementById('pfok').textContent=tr('pfOk');document.getElementById('pfnew').title=tr('pfNew');document.getElementById('pfedit').title=tr('pfEdit');pfRender();
   document.getElementById('codel').textContent=L==='en'?'CODE IN THE SHOP':'CÓDIGO NA LOJA';
-  document.getElementById('foot').textContent=L==='en'?'Click a slot to mark it as found. Progress is saved in this browser.':'Clica num espaço para o marcar como encontrado. O progresso fica guardado neste navegador.';
+  document.getElementById('foot').textContent=L==='en'?'Click a slot to mark it as found (right-click = X1 dominated crown). Progress is saved in this browser.':'Clica num espaço para o marcar como encontrado (botão direito = coroa X1 dominado). O progresso fica guardado neste navegador.';
   setSync(SYNC.on);
   ['pt','en'].forEach(function(l){var b=document.getElementById('l'+l);b.classList.toggle('on',L===l);b.setAttribute('aria-pressed',L===l);});
   renderTabs();render();

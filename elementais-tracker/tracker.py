@@ -51,6 +51,44 @@ def aviso_visivel(frame):
     return False
 
 
+def _mascara_x1(r):
+    b, g, rr = [r[:, :, i].astype(int) for i in range(3)]
+    return ((rr > 235) & (g > 225) & (b > 110) & (b < 235)).astype(np.uint8)
+
+
+_X1 = {}
+
+
+def x1_dominado(frame):
+    """True se aparece 'EXTRAIU COM SUCESSO / X1 DOMINADO' (texto dourado por baixo do ícone)."""
+    h, w = frame.shape[:2]
+    if "t" not in _X1:
+        _X1["t"] = cv2.imread(os.path.join(REFS, "x1_texto.png"), cv2.IMREAD_GRAYSCALE)
+    t0 = _X1["t"]
+    if t0 is None:
+        return False
+    k = w / 2560.0
+    if abs(k - 1) > 0.01:
+        t0 = cv2.resize(t0, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
+    t = (t0 > 127).astype(np.uint8)
+    th, tw = t.shape
+    n = int(t.sum())
+    if n < 50:
+        return False
+    for dy in (0, -.004, .004, -.008, .008):
+        for dx in (0, -.003, .003):
+            y0, x0 = int((.178 + dy) * h), int((.44 + dx) * w)
+            r = frame[max(y0, 0):y0 + th, max(x0, 0):x0 + tw]
+            if r.shape[:2] != t.shape:
+                continue
+            m = _mascara_x1(r)
+            rec = float((m & t).sum()) / n
+            pre = float((m & t).sum()) / max(int(m.sum()), 1)
+            if rec > 0.55 and pre > 0.55:
+                return True
+    return False
+
+
 _CACHE = {}      # modelos já redimensionados/rodados (a resolução não muda durante o jogo)
 
 
@@ -84,9 +122,9 @@ def pontuar(zona, refs, escalas, angulos):
     return pts
 
 
-def pontuacoes(frame, refs):
+def pontuacoes(frame, refs, forcar=False):
     """{id: pontuação} dos elementais para o aviso no ecrã (None se não há aviso)."""
-    if not aviso_visivel(frame):
+    if not forcar and not aviso_visivel(frame):
         return None
     h, w = frame.shape[:2]
     zona = frame[int(.085 * h):int(.185 * h), int(.465 * w):int(.535 * w)]
@@ -138,9 +176,20 @@ def ler_estado():
         return []
 
 
-def guardar(ordem):
+def ler_dominados():
+    try:
+        with open(SAIDA, encoding="utf-8") as f:
+            return [int(x) for x in json.load(f).get("dominated", [])]
+    except Exception:
+        return []
+
+
+def guardar(ordem, dominados=None):
+    """Guarda a coleção. Os 'dominados' (X1 DOMINADO, com coroa) mantêm-se se não forem dados."""
+    if dominados is None:
+        dominados = ler_dominados()
     with open(SAIDA, "w", encoding="utf-8") as f:
-        json.dump({"found": ordem, "last": ordem[-1] if ordem else None,
+        json.dump({"found": ordem, "last": ordem[-1] if ordem else None, "dominated": dominados,
                    "updated": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
 
 
@@ -207,7 +256,14 @@ class Servidor(BaseHTTPRequestHandler):
                 x = int(x)
                 if 1 <= x <= TOTAL and x not in IGNORAR and x not in lista:
                     lista.append(x)
-            guardar(lista)
+            dom = None
+            if "dominated" in d:
+                dom = []
+                for x in d.get("dominated", []):
+                    x = int(x)
+                    if 1 <= x <= TOTAL and x not in IGNORAR and x not in dom:
+                        dom.append(x)
+            guardar(lista, dom)
             self.send_response(200)
         except Exception:
             self.send_response(400)
@@ -334,6 +390,7 @@ class Rastreio:
                 self._refs = carregar_refs()
             visto = 0.0
             votos, melhor_frame, sem_aviso = [], None, 0
+            vx1, x1_visto, x1_sem = [], 0.0, 0
             self.aviso("Rastreador ligado (monitor %d). Quando aparecer 'NOVO - FOI PARA A COLEÇÃO' "
                        "o elemental é guardado." % self.monitor)
 
@@ -347,11 +404,55 @@ class Rastreio:
                 else:
                     self.aviso("Elemental n.º %02d já estava guardado." % i)
 
+            def dominar(i, c):
+                ordem = ler_estado()
+                dom = ler_dominados()
+                if i in dom:
+                    self.aviso("Elemental n.º %02d já tinha a coroa (X1 dominado)." % i)
+                    return
+                dom.append(i)
+                if i not in ordem:
+                    ordem.append(i)
+                guardar(ordem, dom)
+                self.aviso("X1 DOMINADO: elemental n.º %02d recebeu a coroa (confiança %.2f)  coroas %d" % (i, c, len(dom)))
+
             with mss.mss() as sct:
                 mon = sct.monitors[self.monitor]
                 while not self._parar.is_set():
                     frame = np.array(sct.grab(mon))[:, :, :3].copy()
                     espera = self.intervalo
+                    x1_agora = x1_dominado(frame)
+                    if x1_agora and time.time() - x1_visto <= 6:
+                        self._parar.wait(espera)        # banner X1 já tratado: não o confundir com um elemental novo
+                        continue
+                    if x1_agora:
+                        # banner "EXTRAIU COM SUCESSO / X1 DOMINADO": lê o ícone por cima do texto
+                        espera = min(espera, 0.15)
+                        x1_sem = 0
+                        pz = pontuacoes(frame, self._refs, forcar=True)
+                        r = decidir(pz) if pz else None
+                        if r:
+                            x1_visto = time.time()
+                            dominar(*r)
+                            vx1 = []
+                        elif pz:
+                            o = sorted(pz, key=lambda k: -pz[k])
+                            vx1.append((o[0], pz[o[0]], pz[o[0]] - pz[o[1]]))
+                            ids = [v[0] for v in vx1]
+                            lider = max(set(ids), key=ids.count)
+                            sc = [v[1] for v in vx1 if v[0] == lider]
+                            mg = [v[2] for v in vx1 if v[0] == lider]
+                            if len(sc) >= 3 and ids.count(lider) >= 0.7 * len(ids) and sum(sc) / len(sc) >= 0.55 and sum(mg) / len(mg) >= 0.03:
+                                x1_visto = time.time()
+                                dominar(lider, max(sc))
+                                vx1 = []
+                        self._parar.wait(espera)
+                        continue
+                    if vx1:
+                        x1_sem += 1
+                        if x1_sem >= 4:
+                            self.aviso("Vi 'X1 DOMINADO' mas não reconheci o elemental. Põe a coroa à mão na página.")
+                            vx1 = []
                     pts = pontuacoes(frame, self._refs) if time.time() - visto > 6 else None
                     if pts:
                         sem_aviso = 0

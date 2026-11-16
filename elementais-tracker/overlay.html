@@ -17,7 +17,12 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:'Segoe UI'
 .novo .t em{font-style:normal;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--rc)}
 @keyframes entra{from{transform:translateX(-40px) scale(.8);opacity:0}to{transform:none;opacity:1}}
 .grelha{display:grid;grid-template-columns:repeat(9,44px);gap:5px}
-.grelha div{width:44px;height:44px;border-radius:7px;overflow:hidden;background:#1c243c}
+.grelha div{position:relative;width:44px;height:44px;border-radius:7px;overflow:hidden;background:#1c243c}
+.grelha div.dom{overflow:visible;box-shadow:0 0 0 2px #f2b73a,0 0 8px rgba(242,183,58,.7)}
+.grelha div.dom img{border-radius:7px}
+.coroa{position:absolute;top:-9px;right:-6px;width:20px;height:17px;transform:rotate(14deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.7))}
+.novo.x1{border-color:#f2b73a}
+.novo.x1 small{color:#f6c343}
 .grelha img{width:100%;height:100%;object-fit:cover;display:block}
 .grelha .sil{-webkit-mask:var(--m) center/cover;mask:var(--m) center/cover;background:#000;opacity:.9}
 </style></head><body>
@@ -44,17 +49,20 @@ var RARS=[['Raro',[["Halfpeel'd",[32,30,31]],['Re-Pete',[26,24,25]],["Barry O'Fi
 var INFO={},ORDEM=[];
 RARS.forEach(function(r){r[1].forEach(function(g){g[1].forEach(function(i,k){INFO[i]={n:g[0],k:k,r:r[0]};ORDEM.push(i);});});});
 if(EN){document.getElementById('ntit').textContent='NEW — ADDED TO COLLECTION';document.getElementById('ttit').textContent='Sprites';}
-var PF=null,TOTAL=ORDEM.length,P=new URLSearchParams(location.search),vistos=null,tm;
+var PF=null,TOTAL=ORDEM.length,P=new URLSearchParams(location.search),vistos=null,vistosD=null,tm;
 var esc=parseFloat(P.get('escala'));if(esc>0)document.getElementById('root').style.transform='scale('+esc+')';
 function pad(i){return ('0'+(i+1)).slice(-2)}
-function desenhaGrelha(found){
+var COROA='<svg class="coroa" viewBox="0 0 24 20"><path d="M2 17 1 5l6 5 5-8 5 8 6-5-1 12z" fill="#f6c343" stroke="#8a5a0a" stroke-width="1.4" stroke-linejoin="round"/><rect x="2" y="16.5" width="20" height="2.6" rx="1" fill="#e0a21f" stroke="#8a5a0a" stroke-width="1"/></svg>';
+function desenhaGrelha(found,dom){
   var g=document.getElementById('grelha');g.hidden=false;
   g.innerHTML=ORDEM.map(function(i){
-    return found.indexOf(i)>-1?'<div><img src="/refs/'+pad(i)+'.png" alt=""></div>'
+    return found.indexOf(i)>-1?'<div'+(dom.indexOf(i)>-1?' class="dom"':'')+'><img src="/refs/'+pad(i)+'.png" alt="">'+(dom.indexOf(i)>-1?COROA:'')+'</div>'
       :'<div><img src="/refs/mini/sil_'+pad(i)+'.png" alt=""></div>';}).join('');
 }
-function mostra(i){
+function mostra(i,x1){
   var f=INFO[i],el=document.getElementById('novo');if(!f)return;
+  el.classList.toggle('x1',!!x1);
+  document.getElementById('ntit').textContent=x1?(EN?'X1 DOMINATED':'\uD83D\uDC51 X1 DOMINADO'):(EN?'NEW — ADDED TO COLLECTION':'NOVO — FOI PARA A COLEÇÃO');
   el.style.setProperty('--rc',CORES[f.r]);
   document.getElementById('nimg').src='/refs/'+pad(i)+'.png';
   document.getElementById('nnome').textContent=(NUM[i]?'#'+NUM[i]+' ':'')+nomeL(f.n)+' ('+VN[f.k]+')';
@@ -71,13 +79,15 @@ function aplicaFundo(){
 }
 function ciclo(){
   fetch('/estado',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
-    if(PF!==d.perfil){PF=d.perfil;vistos=null;}
+    if(PF!==d.perfil){PF=d.perfil;vistos=null;vistosD=null;}
     var found=(d.found||[]).map(function(n){return n-1}).filter(function(i){return INFO[i]});
     document.getElementById('cont').textContent=found.length+'/'+TOTAL;
     document.getElementById('fill').style.width=(found.length/TOTAL*100)+'%';
-    var gq=P.get('grelha');if(gq==='1'||(gq!=='0'&&(window.CFG||{}).estilo!=='simples'))desenhaGrelha(found);
-    if(vistos!==null&&found.length>vistos)mostra(found[found.length-1]);
-    vistos=found.length;
+    var dom=(d.dominated||[]).map(function(n){return n-1}).filter(function(i){return INFO[i]});
+    var gq=P.get('grelha');if(gq==='1'||(gq!=='0'&&(window.CFG||{}).estilo!=='simples'))desenhaGrelha(found,dom);
+    if(vistosD!==null&&dom.length>vistosD)mostra(dom[dom.length-1],true);
+    else if(vistos!==null&&found.length>vistos)mostra(found[found.length-1]);
+    vistos=found.length;vistosD=dom.length;
   }).catch(function(){});
 }
 ciclo();aplicaFundo();setInterval(ciclo,1000);setInterval(aplicaFundo,2000);

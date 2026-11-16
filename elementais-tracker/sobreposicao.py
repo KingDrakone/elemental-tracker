@@ -29,6 +29,15 @@ def ler_opacidade():
     return config.ler()["opacidade"]
 
 
+def ler_dominados():
+    try:
+        with open(SAIDA, encoding="utf-8") as f:
+            d = json.load(f)
+        return [int(n) - 1 for n in d.get("dominated", []) if int(n) - 1 in INFO]
+    except Exception:
+        return []
+
+
 def ler():
     try:
         with open(SAIDA, encoding="utf-8") as f:
@@ -162,7 +171,7 @@ def criar(pai=None, x=20, y=140, tamanho=1.0, opacidade=None, idioma="pt", sem_g
     cont = tk.Label(barra, text="0/%d" % TOTAL, bg=PAINEL, fg="#ffc83d", font=("Segoe UI", f(15), "bold"))
     cont.pack(side="left", padx=(f(14), 0))
 
-    estado = {"n": None, "fim": 0.0, "img": None}
+    estado = {"n": None, "nd": None, "fim": 0.0, "img": None}
     obj.antes = barra
     obj.dica = tk.Label(raiz, text="MOVING: drag with the mouse  (Ctrl+Shift+L to lock)" if en
                         else "A MOVER: arrasta com o rato  (Ctrl+Shift+L para bloquear)",
@@ -183,17 +192,18 @@ def criar(pai=None, x=20, y=140, tamanho=1.0, opacidade=None, idioma="pt", sem_g
             return None
 
     for n, i in enumerate(ORDEM):
-        imgs[i] = (mini("sil_%02d.png" % (i + 1)), mini("%02d.png" % (i + 1)))
+        imgs[i] = (mini("sil_%02d.png" % (i + 1)), mini("%02d.png" % (i + 1)), mini("cor_%02d.png" % (i + 1)))
         casas[i] = tk.Label(grelha, bg=PAINEL, image=imgs[i][0], bd=0)
         casas[i].grid(row=n // 9, column=n % 9, padx=1, pady=1)
-    pintado = set()
+    pintura = {}
 
-    def atualiza_grelha(achados):
+    def atualiza_grelha(achados, dom=()):
+        # silhueta = ainda não tens; imagem = tens; imagem com coroa = X1 dominado
         for i in ORDEM:
-            tem = i in achados
-            if tem != (i in pintado) and imgs[i][0] is not None:
-                casas[i].configure(image=imgs[i][1 if tem else 0])
-                (pintado.add if tem else pintado.discard)(i)
+            est = (2 if (i in dom and imgs[i][2] is not None) else 1) if i in achados else 0
+            if est != pintura.get(i, -1) and imgs[i][est] is not None:
+                casas[i].configure(image=imgs[i][est])
+                pintura[i] = est
 
     def mostra(i):
         n, k, r = INFO[i]
@@ -234,11 +244,17 @@ def criar(pai=None, x=20, y=140, tamanho=1.0, opacidade=None, idioma="pt", sem_g
         if estado.get("perfil") != pid:          # trocaste de conta: não é um elemental novo
             estado["perfil"] = pid
             estado["n"] = None
-        cont.configure(text="%d/%d" % (len(achados), TOTAL))
-        atualiza_grelha(set(achados))
-        if estado["n"] is not None and len(achados) > estado["n"]:
+            estado["nd"] = None
+        dom = ler_dominados()
+        cont.configure(text="%d/%d" % (len(achados), TOTAL) + ("   \u265B %d" % len(dom) if dom else ""))
+        atualiza_grelha(set(achados), set(dom))
+        if estado["nd"] is not None and len(dom) > estado["nd"]:
+            mostra(dom[-1])
+            raro.configure(text=("\u265B X1 DOMINATED" if en else "\u265B X1 DOMINADO"), fg="#f6c343")
+        elif estado["n"] is not None and len(achados) > estado["n"]:
             mostra(achados[-1])
         estado["n"] = len(achados)
+        estado["nd"] = len(dom)
 
     ciclo()
     obj.bloquear(bloqueado)

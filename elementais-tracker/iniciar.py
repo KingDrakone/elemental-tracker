@@ -158,7 +158,7 @@ class Controlo:
         self.log("Página aberta no navegador.")
 
     def redefinir(self):
-        tracker.guardar([])
+        tracker.guardar([], [])
         self.log("Todos os elementais foram redefinidos (0/%d)." % dados.TOTAL)
 
     # -- perfis (uma coleção por conta)
@@ -388,6 +388,9 @@ class Painel:
     def norm(s):
         import unicodedata
         return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
+
+    def coroados(self):
+        return set(n - 1 for n in tracker.ler_dominados() if (n - 1) in dados.INFO)
 
     def achados(self):
         return set(n - 1 for n in tracker.ler_estado() if (n - 1) in dados.INFO)
@@ -675,6 +678,7 @@ class Painel:
         c = config.ler()
         en = c["idioma"] == "en"
         a = self.achados()
+        dm = self.coroados()
         tot = dados.TOTAL
         cheio = int(30 * len(a) / tot)
         COR = {"Raro": "\x1b[94m", "Épico": "\x1b[95m", "Lendário": "\x1b[93m", "Mítico": "\x1b[91m"}
@@ -696,7 +700,7 @@ class Painel:
         if not gs:
             return L + [DIM + ("No sprites found" if en else "Nenhum elemental encontrado") + R]
         self.sel[1] = min(self.sel[1], len(gs) - 1)
-        L.append(DIM + " " * 26 + "".join("%-13s" % v for v in vn) + R)
+        L.append(DIM + " " * 26 + "".join("%-13s" % v for v in vn) + R + DIM + ("   ♛ = X1 dominated" if en else "   ♛ = X1 dominado") + R)
         atual = None
         for gi, (rar_, nome, idx) in enumerate(gs):
             if rar_ != atual:
@@ -712,7 +716,7 @@ class Painel:
                 i = idx[v]
                 num = "#%d" % dados.NUM[i] if i in dados.NUM else ""
                 if i in a:
-                    cel.append(CORV[v] + rgb(42, 28, 15) + "\x1b[1m ✔ %-6s " % num + CARD + "  ")
+                    cel.append(CORV[v] + rgb(42, 28, 15) + "\x1b[1m %s %-6s " % ("♛" if i in dm else "✔", num) + CARD + "  ")
                 else:
                     cel.append(rgb(228, 211, 173, True) + CMUT + " · %-6s " % num + CARD + "  ")
             n = sum(1 for i in idx if i in a)
@@ -736,6 +740,7 @@ class Painel:
             "1. Deixa este painel aberto enquanto jogas (Fortnite em 'Ecrã inteiro em janela').",
             "2. Quando aparece 'NOVO - FOI PARA A COLEÇÃO', o rastreador reconhece o elemental,",
             "   guarda-o e mostra-o no overlay e na página (que sincroniza sozinha).",
+            "   Quando aparece 'EXTRAIU COM SUCESSO / X1 DOMINADO', esse elemental ganha uma coroa (♛).",
             "3. Cada parte liga/desliga em Definições, sem fechar as outras.",
             "4. Em Coleção vês e marcas à mão os elementais (como na página): 1 2 3 variante,",
             "   Enter o elemental, A todos (2x), R raridade, F filtro, / buscar, L idioma, C limpar.",
