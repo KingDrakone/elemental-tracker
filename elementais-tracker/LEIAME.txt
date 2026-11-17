@@ -13,6 +13,10 @@ COMEÇAR (o mais simples)
        Ctrl+Shift+L  desbloqueia (para o arrastares com o rato) / bloqueia
    Ícone: a janela mostra o ícone do elemental (icone.ico). Para teres também um atalho com
    esse ícone no ambiente de trabalho, faz duplo clique em "Criar atalho.bat".
+
+   Para o painel abrir sozinho quando o Fortnite abrir, faz duplo clique em "Abrir com o Fortnite.bat".
+   (fica ativo também quando ligas o PC). Para desativar: "Nao abrir com o Fortnite.bat".
+   Se não abrir, faz duplo clique em "Ver vigia.bat" (mostra se ele vê o Fortnite) ou abre o ficheiro vigia.log.
    Nota: no Windows Terminal (em vez da janela clássica do Prompt de Comando) o ícone da
    janela não pode ser mudado; o atalho do ambiente de trabalho tem sempre o ícone.
    PÁGINA COMO JANELA: no Início, "Abrir a página dos Elementais (janela)" abre a página numa

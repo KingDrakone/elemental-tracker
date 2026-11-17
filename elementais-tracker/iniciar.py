@@ -881,6 +881,14 @@ def main():
         tty.setcbreak(sys.stdin.fileno())
     threading.Thread(target=ciclo_painel, args=(painel, ctl), daemon=True).start()
     threading.Thread(target=atalhos_globais, args=(ctl,), daemon=True).start()
+
+    def vigiar_fecho():                   # o vigia pede para fechar quando o Fortnite fecha
+        while not ctl.sair.is_set():
+            if tracker.ESTADO.get("fechar"):
+                ctl.fechar_tudo()
+                return
+            time.sleep(0.5)
+    threading.Thread(target=vigiar_fecho, daemon=True).start()
     try:
         if tk is not None:
             ctl.raiz = tk.Tk()

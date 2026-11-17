@@ -60,32 +60,32 @@ _X1 = {}
 
 
 def x1_dominado(frame):
-    """True se aparece 'EXTRAIU COM SUCESSO / X1 DOMINADO' (texto dourado por baixo do ícone)."""
+    """True se aparece 'EXTRAIU COM SUCESSO / X1 DOMINADO' (texto dourado, em cima ao meio).
+    Procura em toda a zona de cima e tolera pequenas diferenças de tamanho do HUD."""
     h, w = frame.shape[:2]
     if "t" not in _X1:
         _X1["t"] = cv2.imread(os.path.join(REFS, "x1_texto.png"), cv2.IMREAD_GRAYSCALE)
     t0 = _X1["t"]
     if t0 is None:
         return False
-    k = w / 2560.0
-    if abs(k - 1) > 0.01:
-        t0 = cv2.resize(t0, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
-    t = (t0 > 127).astype(np.uint8)
-    th, tw = t.shape
-    n = int(t.sum())
-    if n < 50:
+    y0, y1, x0, x1 = int(.10 * h), int(.30 * h), int(.30 * w), int(.70 * w)
+    m = _mascara_x1(frame[y0:y1, x0:x1]).astype(np.float32)
+    if m.sum() < 30:
         return False
-    for dy in (0, -.004, .004, -.008, .008):
-        for dx in (0, -.003, .003):
-            y0, x0 = int((.178 + dy) * h), int((.44 + dx) * w)
-            r = frame[max(y0, 0):y0 + th, max(x0, 0):x0 + tw]
-            if r.shape[:2] != t.shape:
-                continue
-            m = _mascara_x1(r)
-            rec = float((m & t).sum()) / n
-            pre = float((m & t).sum()) / max(int(m.sum()), 1)
-            if rec > 0.55 and pre > 0.55:
-                return True
+    for f in (1.0, 0.92, 1.08, 0.85, 1.15):
+        k = w / 2560.0 * f
+        tt = cv2.resize(t0, None, fx=k, fy=k, interpolation=cv2.INTER_AREA) if abs(k - 1) > 0.01 else t0
+        t = (tt > 127).astype(np.float32)
+        n = float(t.sum())
+        if n < 50 or t.shape[0] >= m.shape[0] or t.shape[1] >= m.shape[1]:
+            continue
+        inter = cv2.matchTemplate(m, t, cv2.TM_CCORR)                       # pixéis dourados dentro do molde
+        tot = cv2.boxFilter(m, -1, (t.shape[1], t.shape[0]), normalize=False)
+        tot = tot[t.shape[0] // 2:t.shape[0] // 2 + inter.shape[0], t.shape[1] // 2:t.shape[1] // 2 + inter.shape[1]]
+        rec = inter / n
+        pre = inter / np.maximum(tot, 1.0)
+        if float(((rec > 0.48) & (pre > 0.48)).any()):
+            return True
     return False
 
 
@@ -197,7 +197,7 @@ import config
 import perfis
 CONFIG = config.CAMINHO
 PORTA = 8765
-ESTADO = {"obs": True, "pagina_visto": 0.0}      # a sobreposição OBS pode ser desligada (o resto do servidor continua)
+ESTADO = {"obs": True, "pagina_visto": 0.0, "fechar": False}      # a sobreposição OBS pode ser desligada (o resto do servidor continua)
 
 
 def ler_config():
@@ -224,6 +224,15 @@ class Servidor(BaseHTTPRequestHandler):
 
     def do_POST(self):
         rota = self.path.split("?")[0]
+        if rota == "/fechar":                 # pedido do vigia quando o Fortnite fecha
+            if self.headers.get("X-Vigia") == "1" and not self.headers.get("Origin"):   # um site (que envia Origin) não consegue fechar o painel
+                ESTADO["fechar"] = True
+                self.send_response(200)
+            else:
+                self.send_response(403)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if rota not in ("/estado", "/config", "/perfis"):
             self.send_error(404)
             return
@@ -390,7 +399,7 @@ class Rastreio:
                 self._refs = carregar_refs()
             visto = 0.0
             votos, melhor_frame, sem_aviso = [], None, 0
-            vx1, x1_visto, x1_sem = [], 0.0, 0
+            vx1, x1_visto, x1_sem, x1_aviso, x1_frame = [], 0.0, 0, 0.0, None
             self.aviso("Rastreador ligado (monitor %d). Quando aparecer 'NOVO - FOI PARA A COLEÇÃO' "
                        "o elemental é guardado." % self.monitor)
 
@@ -429,6 +438,10 @@ class Rastreio:
                         # banner "EXTRAIU COM SUCESSO / X1 DOMINADO": lê o ícone por cima do texto
                         espera = min(espera, 0.15)
                         x1_sem = 0
+                        x1_frame = frame
+                        if time.time() - x1_aviso > 8:
+                            x1_aviso = time.time()
+                            self.aviso("Vi o banner 'X1 DOMINADO': a ler o elemental...")
                         pz = pontuacoes(frame, self._refs, forcar=True)
                         r = decidir(pz) if pz else None
                         if r:
@@ -451,7 +464,12 @@ class Rastreio:
                     if vx1:
                         x1_sem += 1
                         if x1_sem >= 4:
-                            self.aviso("Vi 'X1 DOMINADO' mas não reconheci o elemental. Põe a coroa à mão na página.")
+                            self.aviso("Vi 'X1 DOMINADO' mas não reconheci o elemental. Põe a coroa à mão na página (botão direito) e envia a captura da pasta 'falhas'.")
+                            try:
+                                os.makedirs(os.path.join(AQUI, "falhas"), exist_ok=True)
+                                cv2.imwrite(os.path.join(AQUI, "falhas", "x1_%s.png" % time.strftime("%H%M%S")), x1_frame)
+                            except Exception:
+                                pass
                             vx1 = []
                     pts = pontuacoes(frame, self._refs) if time.time() - visto > 6 else None
                     if pts:
