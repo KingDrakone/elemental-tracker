@@ -13,6 +13,7 @@ PADRAO = {
     "monitor": 1,
     "x": 20,
     "y": 140,
+    "abrir_painel": True,    # abrir o painel (janela) ao iniciar
     "abrir_pagina": False,   # abrir a página numa janela ao iniciar o painel
     "auto_perfil": True,     # troca de perfil sozinho quando mudas de conta no Fortnite
     "bloqueado": True,       # True: os cliques passam para o jogo; False: podes arrastar o overlay
@@ -26,7 +27,7 @@ def _limpa(c):
     c["estilo"] = c["estilo"] if c["estilo"] in ("completo", "simples") else "completo"
     c["monitor"] = max(1, int(c["monitor"]))
     c["x"], c["y"] = int(c["x"]), int(c["y"])
-    for k in ("overlay_jogo", "rastreio", "obs", "bloqueado", "auto_perfil", "abrir_pagina"):
+    for k in ("overlay_jogo", "rastreio", "obs", "bloqueado", "auto_perfil", "abrir_pagina", "abrir_painel"):
         c[k] = bool(c[k])
     return c
 

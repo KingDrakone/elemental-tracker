@@ -52,7 +52,11 @@ def tracker_aberto():
 
 def abrir_tracker():
     try:
-        subprocess.Popen(["cmd", "/c", "iniciar.bat"], cwd=AQUI, creationflags=NOVA_CONSOLA,
+        py = sys.executable or "python"
+        if py.lower().endswith("python.exe") and os.path.isfile(py[:-10] + "pythonw.exe"):
+            py = py[:-10] + "pythonw.exe"
+        # modo programa: sem janela de comandos (o painel abre como janela própria)
+        subprocess.Popen([py, "iniciar.py", "--sem-consola"], cwd=AQUI, creationflags=SEM_JANELA,
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         log("Fortnite aberto: a abrir o painel dos Elementais.")
     except Exception as e:

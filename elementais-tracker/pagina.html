@@ -536,7 +536,12 @@ function applyLang(){
   ['pt','en'].forEach(function(l){var b=document.getElementById('l'+l);b.classList.toggle('on',L===l);b.setAttribute('aria-pressed',L===l);});
   renderTabs();render();
 }
-function setLang(l){L=l;try{localStorage.setItem(LKEY,l)}catch(e){}applyLang();}
+var fromParent=false;
+function setLang(l){L=l;try{localStorage.setItem(LKEY,l)}catch(e){}applyLang();
+  try{if(window.parent!==window&&!fromParent)window.parent.postMessage({elementais:'idioma',v:l},'*')}catch(e){}}
+/* dentro do painel (iframe): o painel e a página partilham o idioma */
+window.addEventListener('message',function(e){var d=e.data;if(window.parent===window||e.source!==window.parent)return;
+  if(d&&d.elementais==='idioma'&&(d.v==='pt'||d.v==='en')&&d.v!==L){fromParent=true;setLang(d.v);fromParent=false}});
 document.getElementById('lpt').onclick=function(){setLang('pt')};
 document.getElementById('len').onclick=function(){setLang('en')};
 applyLang();

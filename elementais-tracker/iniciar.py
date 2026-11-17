@@ -10,6 +10,7 @@ Elementais do Fortnite — painel (abre tudo de uma vez).
 Teclas:  ↑ ↓ escolher   Enter confirmar   ← → separadores
 No jogo: Ctrl+Shift+O mostra/esconde o overlay   Ctrl+Shift+L bloqueia/desbloqueia (para o mover)
 """
+import json
 import os
 import queue
 import re
@@ -21,6 +22,7 @@ import time
 import webbrowser
 from collections import deque
 
+import arranque
 import config
 import dados
 import perfis
@@ -91,6 +93,8 @@ class Controlo:
         self.ov = None
         self.raiz = None
         self.reset_armado = False
+        self.painel = None
+        self.sem_consola = "--sem-consola" in sys.argv or sys.stdout is None
         self.ultima_conta = None
         self.rastreio = tracker.Rastreio(self.cfg["monitor"], 0.4, self.log)
         self.n_monitores = 1
@@ -110,6 +114,7 @@ class Controlo:
     # -- arranque
     def arrancar(self):
         tracker.ESTADO["obs"] = self.cfg["obs"]
+        tracker.PAINEL = self
         tracker.iniciar_servidor()
         self.log("Sincronização com a página disponível em %s" % ENDERECO.replace("/overlay", ""))
         if self.cfg["rastreio"]:
@@ -118,6 +123,8 @@ class Controlo:
         if n:
             self.log("Removidos %d perfis automáticos vazios (criados por engano)." % n)
         threading.Thread(target=self.vigia_conta, daemon=True).start()
+        if self.cfg.get("abrir_painel"):
+            self.abrir_painel()
         if self.cfg.get("abrir_pagina"):
             self.abrir_pagina()
         if tk is None and self.cfg["overlay_jogo"]:
@@ -156,6 +163,118 @@ class Controlo:
             self.log("Não consegui abrir a janela (%s); a abrir no navegador." % e, "erro")
         webbrowser.open(url)
         self.log("Página aberta no navegador.")
+
+    def abrir_painel(self):
+        """Abre o painel gráfico como programa (janela própria, sem navegador). Se faltar o pywebview,
+        usa uma janela do Edge/Chrome em modo aplicação."""
+        url = "http://localhost:%d/painel" % tracker.PORTA
+        aqui = os.path.dirname(os.path.abspath(__file__))
+        try:
+            import importlib.util
+            if importlib.util.find_spec("webview") and os.path.isfile(os.path.join(aqui, "janela.py")):
+                py = sys.executable
+                if os.name == "nt" and py.lower().endswith("python.exe"):
+                    pw = py[:-10] + "pythonw.exe"
+                    py = pw if os.path.isfile(pw) else py
+                args = [py, os.path.join(aqui, "janela.py"), url] + (["--fechar-tudo"] if self.sem_consola else [])
+                p = subprocess.Popen(args, cwd=aqui, creationflags=0x08000000 if os.name == "nt" else 0,
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.log("Painel aberto como programa.")
+
+                def confirmar():          # se a janela não abrir (WebView2 em falta, etc.), usa o navegador
+                    time.sleep(6)
+                    if p.poll() is not None and p.returncode != 0 and not self.sair.is_set():
+                        self.log("A janela do programa não abriu; a usar o navegador.", "erro")
+                        self.abrir_painel_navegador(url)
+                threading.Thread(target=confirmar, daemon=True).start()
+                return
+        except Exception as e:
+            self.log("Janela do programa indisponível (%s)." % e, "erro")
+        self.abrir_painel_navegador(url)
+
+    def abrir_painel_navegador(self, url):
+        exe = navegador_app()
+        try:
+            if exe:
+                subprocess.Popen([exe, "--app=" + url, "--window-size=1180,880"])
+                self.log("Painel aberto numa janela.")
+                return
+        except Exception as e:
+            self.log("Não consegui abrir a janela (%s); a abrir no navegador." % e, "erro")
+        webbrowser.open(url)
+        self.log("Painel aberto no navegador.")
+
+    def estado_web(self):
+        """Tudo o que a janela do painel mostra (JSON)."""
+        c = config.ler()
+        a = [n - 1 for n in tracker.ler_estado() if (n - 1) in dados.INFO]
+        rar = []
+        for nome, grupos in dados.RARS:
+            rar.append({"nome": nome, "n": sum(1 for _, idx in grupos for i in idx if i in a),
+                        "t": sum(len(idx) for _, idx in grupos)})
+        ultimo = ""
+        try:
+            with open(tracker.SAIDA, encoding="utf-8") as f:
+                d = json.load(f)
+            if d.get("last") and (d["last"] - 1) in dados.INFO:
+                ultimo = dados.descricao(d["last"] - 1, c["idioma"] == "en")
+        except Exception:
+            pass
+        if tk is None:
+            ov = "indisponível"
+        elif not c["overlay_jogo"]:
+            ov = "desativado"
+        else:
+            ov = ("visível" if self.visivel else "escondido") + (" · bloqueado" if c["bloqueado"] else " · a mover")
+        pn = self.painel
+        pf = perfis.ativo()
+        en = c["idioma"] == "en"
+        if en:
+            ov = " · ".join(VAL_EN.get(x, x) for x in ov.split(" · "))
+            rar = [dict(r, nome=dados.RN_EN.get(r["nome"], r["nome"])) for r in rar]
+            defs = []
+            for r, v, k, d in pn.definicoes():
+                r, d = DEF_EN.get(k, (r, d))
+                v = VAL_EN.get(v, v.replace(" (de ", " (of "))
+                defs.append({"rotulo": r, "valor": v, "chave": k, "desc": d})
+            ajuda = AJUDA_EN
+            registo = [{"h": h, "t": traduz_log(t_), "tipo": k} for h, t_, k in list(self.registo)[-30:]]
+        else:
+            defs = [{"rotulo": r, "valor": v, "chave": k, "desc": d} for r, v, k, d in pn.definicoes()]
+            ajuda = [sem_cor(x) for x in pn.ajuda()]
+            registo = [{"h": h, "t": t_, "tipo": k} for h, t_, k in list(self.registo)[-30:]]
+        return {
+            "versao": VERSAO, "en": c["idioma"] == "en", "programa": bool(self.sem_consola),
+            "perfil": {"id": pf["id"], "nome": pf["nome"]},
+            "perfis": [{"id": x["id"], "nome": x["nome"]} for x in perfis.lista()],
+            "achados": len(a), "total": dados.TOTAL, "rar": rar, "coroas": len(tracker.ler_dominados()),
+            "ultimo": ultimo, "rastreio": bool(self.rastreio.ativo),
+            "pagina": time.time() - tracker.ESTADO.get("pagina_visto", 0.0) < 6,
+            "pagina_existe": os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(__file__)), "pagina.html")),
+            "overlay": ov, "visivel": bool(self.visivel), "bloqueado": bool(c["bloqueado"]),
+            "obs": ENDERECO if c["obs"] else "desativado",
+            "registo": registo, "definicoes": defs, "ajuda": ajuda,
+        }
+
+    def acao_web(self, d):
+        """Executa o que a janela do painel pede."""
+        pn = self.painel
+        if d.get("reset"):
+            self.redefinir()
+        elif d.get("definir"):
+            if str(d["definir"]) in [x[2] for x in pn.definicoes()]:
+                self.alterar(str(d["definir"]))
+        elif d.get("idioma") in ("pt", "en"):          # mudou o idioma (na página dentro do painel)
+            if config.ler()["idioma"] != d["idioma"]:
+                self.cfg = config.guardar(idioma=d["idioma"])
+                self.aplicar("idioma")
+        elif d.get("perfil"):
+            if str(d["perfil"]) in [x["id"] for x in perfis.lista()]:
+                perfis.trocar(str(d["perfil"]))
+                self.log("Perfil: '%s'." % perfis.ativo()["nome"])
+        elif d.get("acao") in [x[1] for x in ACOES]:
+            pn.acao(d["acao"])
+        return {"ok": True}
 
     def redefinir(self):
         tracker.guardar([], [])
@@ -230,7 +349,20 @@ class Controlo:
         elif chave == "diagnostico":
             self.diagnostico()
             return
-        elif chave in ("auto_perfil", "abrir_pagina"):
+        elif chave == "arranque":
+            if not arranque.disponivel():
+                self.log("Abrir e fechar com o Fortnite só funciona no Windows.", "erro")
+                return
+            if arranque.ativo():
+                erro = arranque.desativar()
+                self.log("Já não abre nem fecha com o Fortnite." if not erro else "Não consegui desativar: " + erro,
+                         "erro" if erro else "")
+            else:
+                erro = arranque.ativar()
+                self.log("Ativado: abre quando o Fortnite abrir e fecha quando fechar (também ao ligar o PC)."
+                         if not erro else "Não consegui ativar: " + erro, "erro" if erro else "")
+            return
+        elif chave in ("auto_perfil", "abrir_pagina", "abrir_painel"):
             novo = {chave: not c[chave]}
         elif chave == "repor":
             padrao = dict(config.PADRAO)
@@ -321,6 +453,7 @@ KICK = "https://kick.com/kingdrakone"
 TIKTOK = "https://www.tiktok.com/@kinkdrakone"
 
 ACOES = [
+    ("Abrir o painel (janela)", "painel"),
     ("Abrir a página dos Elementais (janela)", "pagina"),
     ("Mostrar / esconder o overlay", "visivel"),
     ("Desbloquear / bloquear o overlay (para o mover)", "bloqueio"),
@@ -342,9 +475,94 @@ def ligado(b):
     return "ativado" if b else "desativado"
 
 
+# ---- inglês (a janela do painel segue o idioma escolhido em Definições)
+DEF_EN = {
+    "rastreio": ("Automatic tracker", "Reads the screen and saves the elemental when 'NEW - ADDED TO COLLECTION' appears."),
+    "overlay_jogo": ("In-game overlay", "Window on top of Fortnite (use 'Windowed fullscreen')."),
+    "estilo": ("Overlay style", "Full shows the whole collection with silhouettes."),
+    "tamanho": ("Overlay size", "Enter increases by 10 and wraps around."),
+    "opacidade": ("Overlay opacity", "Enter raises by 10 and wraps around (10% = almost invisible)."),
+    "obs": ("OBS overlay", "Address: " + ENDERECO),
+    "idioma": ("Language", "Language of the panel, the in-game overlay and OBS."),
+    "auto_perfil": ("Detect the account automatically", "Switches collection by itself when you change account in Fortnite (best effort)."),
+    "abrir_painel": ("Open the panel window on start", "Opens this window (page style) every time you start the tracker."),
+    "abrir_pagina": ("Open the page on start", "Opens the page in its own window whenever you start the tracker."),
+    "arranque": ("Open and close with Fortnite", "The panel opens when Fortnite opens and closes when it closes (stays active when the PC starts)."),
+    "monitor": ("Monitor to watch", "The screen where Fortnite is."),
+    "novo_perfil": ("Create a new profile", "An empty collection for another account; it becomes active right away."),
+    "diagnostico": ("Account diagnostics", "Shows in Activity which accounts the panel sees in Fortnite's log."),
+    "pasta": ("Open the files folder", "The folder with the tracker and elementais.json."),
+    "repor": ("Reset settings", "Back to the initial values."),
+}
+VAL_EN = {"ativado": "enabled", "desativado": "disabled", "ligado": "on", "desligado": "off",
+          "grelha e cartão": "grid and card", "só contador e cartão": "counter and card only",
+          "só no Windows": "Windows only", "Português": "English", "indisponível": "unavailable",
+          "visível": "visible", "escondido": "hidden", "bloqueado": "locked", "a mover": "moving"}
+AJUDA_EN = [
+    "How it works",
+    "1. Keep this panel open while you play (Fortnite in 'Windowed fullscreen').",
+    "2. When 'NEW - ADDED TO COLLECTION' appears, the tracker recognises the elemental,",
+    "   saves it and shows it in the overlay and on the page (which syncs by itself).",
+    "   When 'EXTRACTED SUCCESSFULLY / X1 DOMINATED' appears, that elemental gets a crown (♛).",
+    "3. Each part can be turned on/off in Settings without closing the others.",
+    "4. In Collection you can see and mark elementals by hand (like on the page).",
+    "",
+    "Accounts",
+    "   Each account has its own collection (profile). With automatic detection on, the panel",
+    "   switches profile when you change account in Fortnite. If it does not detect it, use 'Switch profile'.",
+    "",
+    "In-game overlay",
+    "   Ctrl+Shift+O  show or hide      Ctrl+Shift+L  lock or unlock",
+    "   Unlocked, you can drag it with the mouse; the position is saved.",
+    "   Locked, clicks go through to the game.",
+    "",
+    "OBS",
+    "   'Browser' source with the address: " + ENDERECO,
+    "   (options: ?grelha=0  ?escala=1.5  ?fundo=0.2  ?lang=en)",
+    "",
+    "Files",
+    "   elementais.json (collection)   config.json (settings)",
+]
+LOG_EN = [
+    (r"Rastreador ligado \(monitor (\d+)\)\..*", r"Tracker on (monitor \1). When 'NEW - ADDED TO COLLECTION' appears the elemental is saved."),
+    (r"Sincronização com a página disponível em (.*)", r"Page sync available at \1"),
+    (r"Painel aberto como programa\.", "Panel opened as a program."),
+    (r"Painel aberto numa janela\.", "Panel opened in a window."),
+    (r"Painel aberto no navegador\.", "Panel opened in the browser."),
+    (r"Página aberta numa janela\.", "Page opened in a window."),
+    (r"Página aberta no navegador\.", "Page opened in the browser."),
+    (r"Conta detetada: perfil '(.*)'\.", r"Account detected: profile '\1'."),
+    (r"Conta detetada: perfil '(.*)' \(coleção trocada\)\.", r"Account detected: profile '\1' (collection switched)."),
+    (r"Novo elemental: n\.º (\d+) \(confiança ([\d.]+)\)\s+total (\d+/\d+)", r"New elemental: no. \1 (confidence \2)  total \3"),
+    (r"Elemental n\.º (\d+) já estava guardado\.", r"Elemental no. \1 was already saved."),
+    (r"X1 DOMINADO: elemental n\.º (\d+) recebeu a coroa \(confiança ([\d.]+)\)\s+coroas (\d+)", r"X1 DOMINATED: elemental no. \1 got the crown (confidence \2)  crowns \3"),
+    (r"Elemental n\.º (\d+) já tinha a coroa \(X1 dominado\)\.", r"Elemental no. \1 already had the crown (X1 dominated)."),
+    (r"Vi o banner 'X1 DOMINADO': a ler o elemental\.\.\.", "Saw the 'X1 DOMINATED' banner: reading the elemental..."),
+    (r"Overlay visível\.", "Overlay visible."),
+    (r"Overlay escondido\.", "Overlay hidden."),
+    (r"Perfil: '(.*)'.*", r"Profile: '\1'."),
+    (r"Definições repostas\.", "Settings reset."),
+    (r"Ativado: abre quando o Fortnite abrir.*", "Enabled: opens when Fortnite opens and closes when it closes (also at PC start)."),
+    (r"Já não abre nem fecha com o Fortnite\.", "No longer opens or closes with Fortnite."),
+    (r"Rastreador desligado\.", "Tracker off."),
+    (r"Rastreador ligado\.", "Tracker on."),
+    (r"Sem tkinter: o overlay do jogo não está disponível neste PC\.", "No tkinter: the in-game overlay is not available on this PC."),
+]
+
+
+def traduz_log(texto):
+    import re
+    for padrao, subst in LOG_EN:
+        m = re.fullmatch(padrao, texto)
+        if m:
+            return m.expand(subst) if isinstance(subst, str) else texto
+    return texto
+
+
 class Painel:
     def __init__(self, ctl):
         self.ctl = ctl
+        ctl.painel = self
         self.tab = 0
         self.sel = [0, 0, 0, 0]
         self.rar = 0            # 0 = todas, 1..4 = Raro, Épico, Lendário, Mítico
@@ -366,12 +584,16 @@ class Painel:
             ("Opacidade do overlay", "%d%%" % round(c["opacidade"] * 100), "opacidade",
              "Enter sobe de 10 em 10 e volta ao início (10% = quase invisível)."),
             ("Sobreposição OBS", ligado(c["obs"]), "obs", "Endereço: " + ENDERECO),
-            ("Idioma dos overlays", "Português" if c["idioma"] == "pt" else "English", "idioma",
-             "Nomes e textos do overlay do jogo e do OBS."),
+            ("Idioma (painel e overlays)", "Português" if c["idioma"] == "pt" else "English", "idioma",
+             "Idioma do painel, do overlay do jogo e do OBS."),
             ("Detetar a conta automaticamente", ligado(c["auto_perfil"]), "auto_perfil",
              "Troca de coleção sozinho quando mudas de conta no Fortnite (melhor esforço)."),
+            ("Abrir o painel em janela ao iniciar", ligado(c["abrir_painel"]), "abrir_painel",
+             "Abre esta janela (com o estilo da página) sempre que arrancas o tracker."),
             ("Abrir a página ao iniciar", ligado(c["abrir_pagina"]), "abrir_pagina",
              "Abre a página numa janela própria sempre que arrancas o painel."),
+            ("Abrir e fechar com o Fortnite", ligado(arranque.ativo()) if arranque.disponivel() else "só no Windows", "arranque",
+             "O painel abre sozinho quando o Fortnite abre e fecha quando o Fortnite fecha (fica ativo ao ligar o PC)."),
             ("Monitor a vigiar", "%d (de %d)" % (c["monitor"], self.ctl.n_monitores), "monitor",
              "O ecrã onde o Fortnite está."),
             ("Criar um perfil novo", "", "novo_perfil", "Uma coleção vazia para outra conta; fica ativa logo."),
@@ -535,7 +757,9 @@ class Painel:
         ctl = self.ctl
         if a != "reset":
             ctl.reset_armado = False
-        if a == "pagina":
+        if a == "painel":
+            ctl.abrir_painel()
+        elif a == "pagina":
             ctl.abrir_pagina()
         elif a == "visivel":
             ctl.alternar_visivel()
@@ -580,8 +804,8 @@ class Painel:
     def linhas(self):
         ctl = self.ctl
         L = [NEG + "Elementais do Fortnite" + R + DIM + "  v" + VERSAO + "      " + ("CODE IN THE SHOP: " if config.ler()["idioma"] == "en" else "CÓDIGO NA LOJA: ") + R + NEG + "DRAKONE" + R,
-             DIM + "Instagram: " + R + NEG + "@kingdrakone_reserva" + R + DIM + "   X: " + R + NEG + "@kingdrakone" + R + DIM + "   Twitch: " + R + NEG + "kingdrakone" + R + DIM + "   Kick: " + R + NEG + "kingdrakone" + R + DIM + "   TikTok: " + R + NEG + "@kinkdrakone" + R,
-             DIM + "YouTube: " + R + NEG + "@KingDrakone" + R + DIM + " · " + R + NEG + "@kingDrakone-o6g" + R,
+             DIM + "Instagram: " + R + NEG + "@kingdrakone_reserva" + R + DIM + "   X: " + R + NEG + "@kingdrakone" + R + DIM + "   Twitch: " + R + NEG + "kingdrakone" + R + DIM + "   Kick: " + R + NEG + "kingdrakone" + R,
+             DIM + "YouTube: " + R + NEG + "@KingDrakone" + R + DIM + " · " + R + NEG + "@kingDrakone-o6g" + R + DIM + "   TikTok: " + R + NEG + "@kinkdrakone" + R,
              GOLD + "─" * LARGURA + R]
         L.append(" ".join((SEL + " %s " % n + R) if i == self.tab else (GOLD + "▏" + INK + "%s" % n + GOLD + "▕" + R) for i, n in enumerate(TABS)))
         L.append("")
@@ -870,16 +1094,24 @@ def ciclo_painel(painel, ctl):
 
 def main():
     ctl = Controlo()
+    if ctl.sem_consola:                    # modo programa: sem janela de comandos; os avisos vão para um ficheiro
+        try:
+            sys.stdout = sys.stderr = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "elementais.log"),
+                                           "a", encoding="utf-8", buffering=1)
+        except Exception:
+            pass
     painel = Painel(ctl)
     ctl.arrancar()
-    preparar_terminal()
+    if not ctl.sem_consola:
+        preparar_terminal()
     antigo = None
-    if os.name != "nt" and sys.stdin.isatty():
+    if not ctl.sem_consola and os.name != "nt" and sys.stdin.isatty():
         import termios
         import tty
         antigo = termios.tcgetattr(sys.stdin)
         tty.setcbreak(sys.stdin.fileno())
-    threading.Thread(target=ciclo_painel, args=(painel, ctl), daemon=True).start()
+    if not ctl.sem_consola:
+        threading.Thread(target=ciclo_painel, args=(painel, ctl), daemon=True).start()
     threading.Thread(target=atalhos_globais, args=(ctl,), daemon=True).start()
 
     def vigiar_fecho():                   # o vigia pede para fechar quando o Fortnite fecha
@@ -912,8 +1144,9 @@ def main():
         if antigo is not None:
             import termios
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, antigo)
-        sys.stdout.write("\x1b]111\x07\x1b]110\x07\x1b[?25h\x1b[0m\x1b[2J\x1b[H")
-        sys.stdout.flush()
+        if not ctl.sem_consola:
+            sys.stdout.write("\x1b]111\x07\x1b]110\x07\x1b[?25h\x1b[0m\x1b[2J\x1b[H")
+            sys.stdout.flush()
 
 
 if __name__ == "__main__":

@@ -197,6 +197,7 @@ import config
 import perfis
 CONFIG = config.CAMINHO
 PORTA = 8765
+PAINEL = None            # o painel (iniciar.py) regista-se aqui: estado_web() e acao_web()
 ESTADO = {"obs": True, "pagina_visto": 0.0, "fechar": False}      # a sobreposição OBS pode ser desligada (o resto do servidor continua)
 
 
@@ -217,6 +218,23 @@ class Servidor(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Access-Control-Allow-Private-Network", "true")
 
+    def _so_local(self):
+        """Painel: só aceita pedidos feitos pela própria janela do painel (nunca por um site)."""
+        host = (self.headers.get("Host") or "").lower()
+        if host not in ("localhost:%d" % PORTA, "127.0.0.1:%d" % PORTA):
+            return False
+        org = self.headers.get("Origin")
+        return not org or org.lower() in ("http://localhost:%d" % PORTA, "http://127.0.0.1:%d" % PORTA)
+
+    def _json(self, obj, codigo=200):
+        dados = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self.send_response(codigo)
+        self.send_header("Content-Type", TIPOS[".json"])
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(dados)))
+        self.end_headers()
+        self.wfile.write(dados)
+
     def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
@@ -224,6 +242,17 @@ class Servidor(BaseHTTPRequestHandler):
 
     def do_POST(self):
         rota = self.path.split("?")[0]
+        if rota == "/painel/acao":
+            if not self._so_local() or PAINEL is None:
+                self._json({"erro": "recusado"}, 403)
+                return
+            try:
+                n = int(self.headers.get("Content-Length", 0))
+                d = json.loads(self.rfile.read(min(n, 20000)).decode("utf-8"))
+                self._json(PAINEL.acao_web(d) or {"ok": True})
+            except Exception:
+                self._json({"erro": "pedido inválido"}, 400)
+            return
         if rota == "/fechar":                 # pedido do vigia quando o Fortnite fecha
             if self.headers.get("X-Vigia") == "1" and not self.headers.get("Origin"):   # um site (que envia Origin) não consegue fechar o painel
                 ESTADO["fechar"] = True
@@ -282,6 +311,29 @@ class Servidor(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path.split("?")[0]
+        if p in ("/painel", "/painel/estado"):
+            if not self._so_local() or PAINEL is None:
+                self.send_error(403)
+                return
+            if p == "/painel/estado":
+                try:
+                    self._json(PAINEL.estado_web())
+                except Exception as e:
+                    self._json({"erro": str(e)}, 500)
+                return
+            try:
+                with open(os.path.join(AQUI, "painel.html"), "rb") as fh:
+                    dados = fh.read()
+            except OSError:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", TIPOS[".html"])
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(dados)))
+            self.end_headers()
+            self.wfile.write(dados)
+            return
         if p == "/pagina":
             f = os.path.join(AQUI, "pagina.html")
         elif p in ("/", "/overlay"):

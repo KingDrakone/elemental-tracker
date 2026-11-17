@@ -2,6 +2,12 @@ RASTREADOR DE ELEMENTAIS
 ========================
 
 COMEÇAR (o mais simples)
+   COMO PROGRAMA (recomendado): duplo clique em  Elementais.bat . Abre só a janela do programa (sem
+   navegador e sem janela de comandos) com o estilo da página: Início, Coleção, Definições e Ajuda.
+   Fechar a janela fecha o programa. Na primeira vez instala o pywebview; se não conseguir, usa uma
+   janela do Edge/Chrome em modo aplicação. Para teres o ícone no ambiente de trabalho: "Criar atalho.bat".
+   Os avisos de erro ficam em elementais.log.
+   Versão com janela de comandos (a antiga): iniciar.bat .
    Faz duplo clique em  iniciar.bat . Na primeira vez instala o que falta. Abre o painel
    "Elementais do Fortnite" (uma janela preta, com Início / Definições / Ajuda) e liga tudo:
    rastreador, overlay do jogo, overlay OBS e sincronização com a página.
@@ -14,6 +20,7 @@ COMEÇAR (o mais simples)
    Ícone: a janela mostra o ícone do elemental (icone.ico). Para teres também um atalho com
    esse ícone no ambiente de trabalho, faz duplo clique em "Criar atalho.bat".
 
+   Mais fácil: no painel, separador Definições, "Abrir e fechar com o Fortnite" (Enter liga/desliga).
    Para o painel abrir sozinho quando o Fortnite abrir, faz duplo clique em "Abrir com o Fortnite.bat".
    (fica ativo também quando ligas o PC). Para desativar: "Nao abrir com o Fortnite.bat".
    Se não abrir, faz duplo clique em "Ver vigia.bat" (mostra se ele vê o Fortnite) ou abre o ficheiro vigia.log.
