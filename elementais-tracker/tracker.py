@@ -19,7 +19,7 @@ import numpy as np
 AQUI = os.path.dirname(os.path.abspath(__file__))
 REFS = os.path.join(AQUI, "refs")
 SAIDA = os.path.join(AQUI, "elementais.json")
-TOTAL = 44
+TOTAL = 58
 IGNORAR = set()          # (o Kelper já tem a variante Amaldiçoado, #23)
 LIMIAR = 0.70            # confiança mínima (0 a 1)
 MARGEM = 0.10            # o 1.º lugar tem de ganhar ao 2.º por pelo menos isto
